@@ -1,6 +1,6 @@
-baseURL = "http://localhost:1313/"
-languageCode = "en"
-defaultContentLanguage = "en"                             # en / zh-cn / ... (This field determines which i18n file to use)
+baseURL = ""
+languageCode = "zh-cn"
+defaultContentLanguage = "zh-cn"                             # en / zh-cn / ... (This field determines which i18n file to use)
 title = "Even - A super concise theme for Hugo"
 preserveTaxonomyNames = true
 enableRobotsTXT = true
@@ -21,7 +21,7 @@ googleAnalytics = ""      # UA-XXXXXXXX-X
 copyright = ""            # default: author.name ↓        # 默认为下面配置的author.name ↓
 
 [author]                  # essential                     # 必需
-  name = "olOwOlo"
+  name = "kikyo"
 
 [sitemap]                 # essential                     # 必需
   changefreq = "weekly"
@@ -38,6 +38,7 @@ copyright = ""            # default: author.name ↓        # 默认为下面配
   weight = 20
   identifier = "archives"
   url = "/post/"
+
 [[menu.main]]
   name = "Tags"
   weight = 30
@@ -50,16 +51,16 @@ copyright = ""            # default: author.name ↓        # 默认为下面配
   url = "/categories/"
 
 [params]
-  version = "4.x"           # Used to give a friendly message when you have an incompatible update
+  version = "1.0"           # Used to give a friendly message when you have an incompatible update
   debug = false             # If true, load `eruda.min.js`. See https://github.com/liriliri/eruda
 
-  since = "2017"            # Site creation time          # 站点建立时间
+  since = "2021"            # Site creation time          # 站点建立时间
   # use public git repo url to link lastmod git commit, enableGitInfo should be true.
   # 指定 git 仓库地址，可以生成指向最近更新的 git commit 的链接，需要将 enableGitInfo 设置成 true.
   gitRepo = ""
 
   # site info (optional)                                  # 站点信息（可选，不需要的可以直接注释掉）
-  logoTitle = "Even"        # default: the title value    # 默认值: 上面设置的title值
+  logoTitle = "Kikyo"        # default: the title value    # 默认值: 上面设置的title值
   keywords = ["Hugo", "theme","even"]
   description = "Hugo theme even example site."
 
@@ -178,8 +179,8 @@ copyright = ""            # default: author.name ↓        # 默认为下面配
 
   [params.reward]                                         # 文章打赏
     enable = false
-    wechat = "/path/to/your/wechat-qr-code.png"           # 微信二维码
-    alipay = "/path/to/your/alipay-qr-code.png"           # 支付宝二维码
+    wechat = ""           # 微信二维码
+    alipay = ""           # 支付宝二维码
 
   [params.social]                                         # 社交链接
     a-email = "mailto:your@email.com"
