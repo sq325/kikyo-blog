@@ -199,7 +199,7 @@ copyright = ""            # default: author.name ↓        # 默认为下面配
     j-douban = "https://www.douban.com/people/79138294/"
 #    k-pocket = "http://localhost:1313"
 #    l-tumblr = "http://localhost:1313"
-#    m-instagram = "http://localhost:1313"
+    m-instagram = "https://www.instagram.com/sunlike325/"
 #    n-gitlab = "http://localhost:1313"
 #    o-bilibili = "http://localhost:1313"
 

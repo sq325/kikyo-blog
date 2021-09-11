@@ -1,7 +1,7 @@
 ---
-title: "{{ replace .TranslationBaseName "-" " " | title }}"
-date: {{ .Date }}
-lastmod: {{ .Date }}
+title: "hugo处理图片的方式"
+date: 2021-09-11T18:24:31+08:00
+lastmod: 2021-09-11T18:24:31+08:00
 draft: false
 keywords: []
 description: ""
