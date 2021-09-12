@@ -187,7 +187,7 @@ section page
 
 taxonomy page
 
-
+section page 和taxonomy page
 
 ![list page](list_page.svg)
 
