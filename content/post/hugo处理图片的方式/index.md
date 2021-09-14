@@ -1,8 +1,8 @@
 ---
 title: "hugo处理图片的方式"
 date: 2021-09-13T18:24:31+08:00
-lastmod: 2021-09-13T18:24:31+08:00
-draft: true
+lastmod: 2021-09-15T00:24:31+08:00
+draft: false
 keywords: []
 description: ""
 tags: ["hugo"]
@@ -44,19 +44,16 @@ sequenceDiagrams:
 
 <!--more-->
 
+- 把图片放到`static/`下，在文章中使用绝对路径引用图片
+- 把图片放到和文章同级目录下，通过相对路径引用图片
 
+从最终效果来看，两种方法在构建后都能正确显示图片，但第一种方法的问题在于使用`hugo server -D`预览时无法正确加载图片，第二种方法可以在预览时正确加载图片，但会导致`content/{{section}}/`下多嵌套一层目录。
 
-# 把图片放到`static/`下
-
-把图片全部放到`static/`文件夹下，并在文章中
+之所以把图片放到`static/`下，是因为hugo在构建时会把`static/`下所有内容移到`public/`下。构建后`content/`下的内容也会被移到`public/`下，这样相当于文章和图片有共同的根目录，在文章中使用绝对引用即可正确显示图片。
 
 ![image-20210913173736916](image-20210913173736916.png)
 
-# 把图片和文章放在同级目录
-
-
-
-
+第二种方法是把图片和文章放在同级目录，比如`content/{{section}}/{{article_name}}/`，这样虽会显得`content/`下略显冗余，但可以在预览或构建后都正确显示图片。
 
 ```powershell
 content/
