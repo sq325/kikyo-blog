@@ -1,7 +1,7 @@
 ---
 title: "About The Blog"
 date: 2021-09-07T17:43:52+08:00
-lastmod: 2021-09-13T7:43:52+08:00
+lastmod: 2021-09-15T7:43:52+08:00
 toc: false
 
 ---
@@ -17,6 +17,7 @@ toc: false
 - nginx
 - caddy
 - redis
+- kafka
 - docker
 - kubernetes
 - python相关
