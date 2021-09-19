@@ -61,9 +61,9 @@ sequenceDiagrams:
 
 下面先简单介绍下section。
 
-## section
+# section
 
-### 定义section
+## 定义section
 
 >  section的元数据由其下的_index.md定义，内容由其下文章构成。
 
@@ -83,7 +83,7 @@ content
 
 文章扉页模板和页面模板的位置也和section有关，如`archetypes/{{section}}/default.md`和`layouts/{{section}}/single.html`。
 
-### section使用的例子
+## section使用的例子
 
 创建`content/posts/_index.md`，内容如下
 
@@ -124,7 +124,7 @@ Follow my journey through this new blog.
 
 # 内容和URL的对应关系
 
-content的目录结构决定了内容和URL的对应关系，其中section起着重要作用。
+content的目录结构决定了内容和URL的对应关系，其中[section](#section)起着重要作用。
 
 section在content目录下是一个文件夹，在页面中为一个列表页面。
 
