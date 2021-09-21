@@ -1,7 +1,7 @@
 ---
 title: "使用ss查看linux套接字"
 date: 2021-09-20T22:10:51+08:00
-lastmod: 2021-09-20T22:10:51+08:00
+lastmod: 2021-09-21T22:10:51+08:00
 draft: false
 keywords: []
 description: ""
@@ -15,7 +15,7 @@ comment: true
 toc: true
 autoCollapseToc: true
 postMetaInFooter: true
-hiddenFromHomePage: false
+hiddenFromHomePage: true
 # You can also define another contentCopyright. e.g. contentCopyright: "This is another copyright."
 contentCopyright: false
 reward: false
@@ -37,12 +37,26 @@ flowchartDiagrams:
 sequenceDiagrams: 
   enable: false
   options: ""
-
 ---
+ss使用指南
 
 <!--more-->
 
-`ss`
+---
+
+# 常用选项
+
+**`ss`**
+
+- `-n`, `--numeric`       现实数字而不是服务名
+- `-r`, `--resolve`       解析服务名
+- `-a`, `--all`           所有socket
+- `-o`, `--options`       计时器信息
+- `-e`, `--extended`      详细的socket信息
+- `-m`, `--memory`        socket memory usage
+- `-p`, `--processes`     process
+- `-i`, `--info`          TCP information
+- `-s`, `--summary`       socket usage summary
 
 ```bash
 ss -tlr #把ip和端口解释为域名和协议
@@ -59,6 +73,10 @@ LISTEN   0         128                 [::]:ssh                      [::]:*
 
 
 # 统计信息
+
+`ss -s`
+
+`netstat -s`
 
 ```bash
 ss -s 
@@ -130,7 +148,9 @@ ss -tln #tcp+listen
 
 `ss -ant state [filter]`
 
-established, syn-sent, syn-recv, fin-wait-1, fin-wait-2, time-wait, closed, close-wait, last-ack, listening, closing 
+- `-l`: listening
+
+可用的状态：`established`, `syn-sent`, `syn-recv`, `fin-wait-1`, `fin-wait-2`, `time-wait`, `closed`, `close-wait`, `last-ack`, `listening`, `closing `
 
 ```bash
 ss -ant state established #已经建立的连接

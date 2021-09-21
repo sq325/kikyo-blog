@@ -2,7 +2,7 @@
 
 title: "linux网络工具汇总"
 date: 2021-09-18T22:56:16+08:00
-lastmod: 2021-09-19T22:56:16+08:00
+lastmod: 2021-09-21T22:56:16+08:00
 draft: false
 keywords: []
 description: ""
@@ -140,13 +140,14 @@ netstat -rn
 route -n 
 ip route
 
-
+'''
 Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 0.0.0.0         10.139.128.1    0.0.0.0         UG    0      0        0 eth0  #默认路由
 10.0.0.10       10.139.128.1    255.255.255.255 UGH   0      0        0 eth0  #主机路由
 10.139.128.0    0.0.0.0         255.255.224.0   U     0      0        0 eth0  #网络路由
 169.254.0.0     0.0.0.0         255.255.0.0     U     1002   0        0 eth0
 172.17.0.0      0.0.0.0         255.255.0.0     U     0      0        0 docker0
+'''
 ```
 
 | 字段        |                             说明                             |
@@ -421,7 +422,7 @@ www.baidu.com [36.152.44.96] 443 (https) open
 
 ## TCP报文
 
-详见本站文章：[使用tcpdump抓包](/post/使用tcpdump抓包/)
+详见本站文章：[tcpdump使用指南](/post/使用tcpdump抓包/)
 
 
 
