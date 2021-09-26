@@ -6,7 +6,7 @@ lastmod: 2021-09-21T22:56:16+08:00
 draft: false
 keywords: []
 description: ""
-tags: ["linux", "网络"]
+tags: ["linux", "网络", "命令汇总"]
 categories: ["技术"]
 author: ""
 

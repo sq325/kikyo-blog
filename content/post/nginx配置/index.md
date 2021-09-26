@@ -1,12 +1,12 @@
 ---
-title: "tcp常见问题汇总"
-date: 2021-09-20T22:17:00+08:00
-lastmod: 2021-09-20T22:17:00+08:00
+title: "nginx配置总结"
+date: 2021-09-24T17:31:42+08:00
+lastmod: 2021-09-24T17:31:42+08:00
 draft: false
 keywords: []
 description: ""
-tags: ["tcp", "网络"]
-categories: ["技术"]
+tags: []
+categories: []
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -15,7 +15,7 @@ comment: true
 toc: true
 autoCollapseToc: true
 postMetaInFooter: true
-hiddenFromHomePage: true
+hiddenFromHomePage: false
 # You can also define another contentCopyright. e.g. contentCopyright: "This is another copyright."
 contentCopyright: false
 reward: false
@@ -44,34 +44,9 @@ sequenceDiagrams:
 
 
 
-# 粘包
 
 
+# 参考
 
-# RST相关
-
-> 用于异常地关闭连接
-
-RST出现的场景
-
-- 端口不可用：防火墙阻拦或没有监听端口
-- socket提前关闭：
-  - 本端提前关闭socket但缓冲区还有数据，此时会发送RST给对端
-  - 远端提前关闭但本端还在发消息，对端会发送RST
-
-内核收到RST后，应用层只能通过调用读/写操作来感知，此时会对应获得 Connection reset by peer 和Broken pipe 报错。
-
-收到RST包，不一定会断开连接，seq不在合法窗口范围内的数据包会被默默丢弃。
-
-# 幽灵连接
-
-
-
-# TIME-WAIT过多
-
-
-
-# CLOSE-WAIT过多
-
-
+[Nginx Cheatsheet](https://vishnu.hashnode.dev/nginx-cheatsheet#load-balancing)
 
