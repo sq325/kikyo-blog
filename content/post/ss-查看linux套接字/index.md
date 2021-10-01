@@ -1,5 +1,5 @@
 ---
-title: "使用ss查看linux套接字"
+title: "ss-查看linux套接字"
 date: 2021-09-20T22:10:51+08:00
 lastmod: 2021-09-21T22:10:51+08:00
 draft: false
@@ -38,7 +38,7 @@ sequenceDiagrams:
   enable: false
   options: ""
 ---
-ss使用指南
+使用场景：在linux环境替代netstat查看socket情况。
 
 <!--more-->
 

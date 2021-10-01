@@ -1,5 +1,5 @@
 ---
-title: "hugo处理图片的方式"
+title: "hugo-处理图片的方式"
 date: 2021-09-13T18:24:31+08:00
 lastmod: 2021-09-15T00:24:31+08:00
 draft: false

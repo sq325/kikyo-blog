@@ -1,11 +1,11 @@
 ---
-title: "docker-常用命令"
-date: 2021-09-21T21:21:22+08:00
-lastmod: 2021-09-21T21:21:22+08:00
+title: "nginx-动静分离"
+date: 2021-10-01T00:03:19+08:00
+lastmod: 2021-10-01T00:03:19+08:00
 draft: false
 keywords: []
 description: ""
-tags: ["docker"]
+tags: ["nginx"]
 categories: ["技术"]
 author: ""
 
@@ -42,3 +42,10 @@ sequenceDiagrams:
 
 <!--more-->
 
+
+
+# 动静分离
+
+
+
+# 防盗链

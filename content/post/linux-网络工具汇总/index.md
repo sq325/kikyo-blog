@@ -1,12 +1,12 @@
 ---
 
-title: "linux网络工具汇总"
+title: "linux-网络工具汇总"
 date: 2021-09-18T22:56:16+08:00
 lastmod: 2021-09-21T22:56:16+08:00
 draft: false
 keywords: []
 description: ""
-tags: ["linux", "网络", "命令汇总"]
+tags: ["linux", "网络"]
 categories: ["技术"]
 author: ""
 
@@ -40,7 +40,7 @@ sequenceDiagrams:
   options: ""
 ---
 
-汇总本人常用的linux网络命令，附带一些常见网路问题的解析。
+使用场景：汇总常用的linux网络命令，分门别类的介绍各个命令的使用场景，供需要时查阅。
 
 <!--more-->
 
