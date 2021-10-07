@@ -2,7 +2,7 @@
 title: "nginx-反向代理"
 date: 2021-10-01T00:03:03+08:00
 lastmod: 2021-10-01T00:03:03+08:00
-draft: false
+draft: True
 keywords: []
 description: ""
 tags: ["nginx"]
