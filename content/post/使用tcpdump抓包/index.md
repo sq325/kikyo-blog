@@ -1,11 +1,11 @@
 ---
-title: "tcpdump使用指南"
+title: "使用tcpdump抓包"
 date: 2021-09-20T22:09:52+08:00
 lastmod: 2021-09-21T22:09:52+08:00
 draft: false
 keywords: []
 description: ""
-tags: ["linux", "网络", "tcp"]
+tags: ["linux", "网络", "TCP"]
 categories: ["技术"]
 author: ""
 
@@ -38,7 +38,8 @@ sequenceDiagrams:
   enable: false
   options: ""
 ---
-tcpdump使用指南
+
+使用场景：可以在主机获取各协议的报文，分析通讯问题的利器。
 <!--more-->
 
 ---

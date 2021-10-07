@@ -1,12 +1,12 @@
 ---
-title: "nginx配置总结"
-date: 2021-09-24T17:31:42+08:00
-lastmod: 2021-09-24T17:31:42+08:00
-draft: false
+title: "nginx-反向代理"
+date: 2021-10-01T00:03:03+08:00
+lastmod: 2021-10-01T00:03:03+08:00
+draft: True
 keywords: []
 description: ""
-tags: []
-categories: []
+tags: ["nginx"]
+categories: ["技术"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -44,9 +44,20 @@ sequenceDiagrams:
 
 
 
+# 高可用
+
+# 负载均衡
 
 
-# 参考
 
-[Nginx Cheatsheet](https://vishnu.hashnode.dev/nginx-cheatsheet#load-balancing)
+# 地址重定向
 
+
+
+# 限流
+
+
+
+
+
+# API网关

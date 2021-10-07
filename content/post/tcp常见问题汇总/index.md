@@ -1,5 +1,5 @@
 ---
-title: "tcp常见问题汇总"
+title: "TCP-常见问题汇总"
 date: 2021-09-20T22:17:00+08:00
 lastmod: 2021-09-20T22:17:00+08:00
 draft: false
@@ -39,6 +39,8 @@ sequenceDiagrams:
   options: ""
 
 ---
+
+使用场景：总结互联网应用会遇到的各种TCP/IP协议、网络报文等问题。
 
 <!--more-->
 

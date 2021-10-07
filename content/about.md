@@ -1,7 +1,7 @@
 ---
 title: "About The Blog"
 date: 2021-09-07T17:43:52+08:00
-lastmod: 2021-09-24T7:43:52+08:00
+lastmod: 2021-09-27T7:43:52+08:00
 toc: false
 
 ---
@@ -21,7 +21,13 @@ toc: false
 
 这个Blog将记录我的印迹，希望能点亮一点点拼搏在漫漫长路上的你。
 
-长期更新包括但不限于以下主题：
+特色：
+
+- 每篇相关文章开头会介绍使用场景。
+
+# 长期关注以下主题
+
+具体技术：
 
 - linux
 - nginx
@@ -30,12 +36,18 @@ toc: false
 - kafka
 - docker
 - kubernetes
-- python相关
-- golang相关
 
-特色：
+基础知识：
 
-- 每篇相关文章开头会介绍使用场景。
+- 网络
+- 操作系统
+- 算法
+
+语言类：
+
+- Python
+- Golang
+- JavaScript
 
 # About Me
 
