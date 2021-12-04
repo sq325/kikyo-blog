@@ -1,7 +1,7 @@
 ---
 title: "About The Blog"
 date: 2021-09-07T17:43:52+08:00
-lastmod: 2021-09-27T7:43:52+08:00
+lastmod: 2021-12-04T7:43:52+08:00
 toc: false
 
 ---
@@ -21,19 +21,13 @@ toc: false
 
 这个Blog将记录我的印迹，希望能点亮一点点拼搏在漫漫长路上的你。
 
-特色：
-
-- 每篇相关文章开头会介绍使用场景。
-
 # 长期关注以下主题
 
-具体技术：
+工作相关：
 
 - linux
-- nginx
-- caddy
-- redis
-- kafka
+- prometheus
+- zabbix
 - docker
 - kubernetes
 
