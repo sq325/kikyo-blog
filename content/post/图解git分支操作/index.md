@@ -1,12 +1,12 @@
 ---
-title: "docker-常用命令"
-date: 2021-10-21T21:21:22+08:00
-lastmod: 2021-09-21T21:21:22+08:00
-draft: True
+title: "Index"
+date: 2021-12-05T14:47:36+08:00
+lastmod: 2021-12-05T14:47:36+08:00
+draft: true
 keywords: []
 description: ""
-tags: ["docker"]
-categories: ["技术"]
+tags: []
+categories: []
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -41,4 +41,3 @@ sequenceDiagrams:
 ---
 
 <!--more-->
-

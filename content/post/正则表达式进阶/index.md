@@ -1,12 +1,12 @@
 ---
-title: "nginx-动静分离"
-date: 2021-10-21T00:03:19+08:00
-lastmod: 2021-10-01T00:03:19+08:00
-draft: True
+title: "正则表达式进阶"
+date: 2021-12-04T17:20:29+08:00
+lastmod: 2021-12-04T17:20:29+08:00
+draft: true
 keywords: []
 description: ""
-tags: ["nginx"]
-categories: ["技术"]
+tags: []
+categories: []
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -41,11 +41,3 @@ sequenceDiagrams:
 ---
 
 <!--more-->
-
-
-
-# 动静分离
-
-
-
-# 防盗链
