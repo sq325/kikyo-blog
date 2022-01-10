@@ -6,7 +6,7 @@ draft: false
 keywords: []
 description: ""
 tags: ["golang", "json", "struct"]
-categories: ["使用技巧"]
+categories: ["使用Demo"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
