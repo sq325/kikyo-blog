@@ -1,12 +1,12 @@
 ---
-title: "Golang Buffer"
+title: "Golang 流处理"
 date: 2022-01-09T16:33:42+08:00
-lastmod: 2022-01-09T16:33:42+08:00
+lastmod: 2022-01-22T16:33:42+08:00
 draft: true
 keywords: []
 description: ""
-tags: []
-categories: []
+tags: ["golang"]
+categories: ["技术Demo"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -44,21 +44,75 @@ sequenceDiagrams:
 
 
 
-Go中常用的三种buffer
+Go中常用的三种流处理数据结构
 
 - bufio
 - bytes.Buffer
-- strings.Builder
+- strings.Builder和strings.Reader
 
 
 
-其中strings.Builder用来高效的拼接字符串，bytes.Buffer和bufio用来减少磁盘io操作的次数，提高io性能。
+其中strings.Builder主要用来拼接字符串，bytes.Buffer和bufio用来减少磁盘io操作的次数，提高io性能。
 
 `bufio VS bytes.Buffer`：两者都提供一层缓存功能，它们的不同主要在于 bufio 针对的是**文件到内存**的缓存，而 bytes.Buffer 的针对的是**内存到内存**的缓存
 
 # bytes.Buffer
 
 > bytes.Buffer 是一个实现了读写方法的可变大小的字节缓冲。本类型的零值是一个空的可用于读写的缓冲。
+
+```go
+func runCmd(cmd *exec.Cmd) (*bufio.Scanner, bool) {
+
+	stdout, _ := cmd.StdoutPipe()
+	if err := cmd.Start(); err != nil { // 开始执行cmd
+		fmt.Println(err)
+	}
+	var buf1, buf2 bytes.Buffer 
+	buf := io.MultiWriter(&buf1, &buf2) // 使用指针
+	io.Copy(buf, stdout) // stdout读完即被清空
+	content, _ := io.ReadAll(&buf2) // buf2读完被清空
+	return bufio.NewScanner(&buf1), string(content) != ""
+}
+```
+
+
+
+要使用指针，即*bytes.Buffer，而不是byte.Buffer本身
+
+```go
+type Buffer struct {} // 一个实现Read和Write的可变尺寸[]byte
+
+// 既可以从[]byte也可以从string创建Buffer
+func NewBuffer(buf []byte) *Buffer
+func NewBufferString(s string) *Buffer
+```
+
+Read
+
+```go
+func (b *Buffer) Read(p []byte) (n int, err error) // 从b中读取len(p)内容存到p([]byte)
+func (b *Buffer) ReadString(delim byte) (line string, err error) // 以delim为终止符读取b中的数据。如果读取的数据不是以delim为终止，err != nil
+func (b *Buffer) WriteTo(w io.Writer) (n int64, err error) // 从b中读取数据并写入w
+
+
+
+```
+
+
+
+Write
+
+```go
+func (b *Buffer) ReadFrom(r io.Reader) (n int64, err error) // 从r读取数据到b
+```
+
+
+
+
+
+
+
+
 
 ```go
 // 声明
@@ -169,9 +223,35 @@ func main() {
 
 # bufio
 
+> bufio是给Reader加上读的buffer，给Writer加上写的buffer
+
+```go
+func NewReader(rd io.Reader) *Reader
+func NewReaderSize(rd io.Reader, size int) *Reader
+
+func NewWriter(w io.Writer) *Writer
+func NewWriterSize(w io.Writer, size int) *Writer
+
+type ReadWriter struct {
+	*Reader
+	*Writer
+}
+func NewReadWriter(r *Reader, w *Writer) *ReadWriter
+
+
+```
+
+
+
 bufio包提供了有缓冲的io，它定义了两个结构体，分别是Reader和Writer, 它们也分别实现了io包中io.Reader和io.Writer接口, 通过传入一个io.Reader的实现对象和一个缓冲池大小参数，可以构造一个bufio.Reader对象，根据bufio.Reader的相关方法便可读取io.Reader中数据流，因为带有缓冲池，读数据会先读到缓冲池，再次读取会先去缓冲池读取，这样减少了io操作，提高了效率；
 
-bufio`则是给一个`Reader`加上读的`buffer
+```go
+
+```
+
+
+
+
 
 
 
@@ -196,11 +276,81 @@ bufio`则是给一个`Reader`加上读的`buffer
 
 strings.builder可以高效的写入、拼接字符串，其内部封装了一个字节数组，写入时其实是将传入的字节append到内部的字节数组上
 
+```go
+type Builder struct {
+    addr *Builder // of receiver, to detect copies by value
+    buf  []byte // 存放字符串
+}
+```
+
+```go
+func (b *Builder) WriteString(s string) (int, error) { // s写入Builder
+ b.copyCheck()
+ b.buf = append(b.buf, s...)
+ return len(s), nil
+}
+
+func (b *Builder) String() string // Builder拼接成string
+func (b *Builder) Write(p []byte) (int, error) // p中数据写入Builder
+```
+
+
+
+拼接字符串
+
+> 推荐使用Builder
+
+```go
+// 使用strings.Builder
+var builder strings.Builder
+s1 := "pre "
+s2 := "after"
+builder.Grow(len(s1)+len(s2)) // 预先分配Builder底层[]byte的cap
+builder.WriteString("pre ")
+builder.WriteString("after")
+builder.String() // pre after
+
+//使用strings.Join
+func Join(elems []string, sep string) string
+
+s := []string{"foo", "bar", "baz"}
+fmt.Println(strings.Join(s, ", ")) // foo, bar, baz
+
+// 使用bytes.Buffer
+buf := new(bytes.Buffer)
+buf.WriteString("pre ")
+buf.WriteString("after ")
+buf.String() // pre after
+```
 
 
 
 
 
+
+
+
+
+# Reader
+
+> 流数据，文件、[]byte、string和bytes.Buffer常被转化为Reader。
+
+io.Reader只能读取一次，即为空。
+
+```text
+file
+[]byte
+string             ->          io.Reader
+bytes.Buffer
+```
+
+
+
+```go
+io.ReadAll(reader io.Reader)
+io.Copy(dst io.Writer, reader io.Reader)
+// 读取后Reader即没有内容，不能读取两次
+```
 
 
 
