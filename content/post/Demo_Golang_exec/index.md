@@ -6,7 +6,7 @@ draft: false
 keywords: []
 description: ""
 tags: ["golang", "os/exec"]
-categories: ["golang"]
+categories: ["技术"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -263,50 +263,96 @@ for stdoutScanner.Scan() {
 
 # 管道
 
-例1
+## 使用`io.Pipe()`
+
+> 注意：使用awk时，参数`"''$1~/^tcp[4]?$/ && $NF==\"ESTABLISHED\"'"`要把单引号去掉。
 
 ```go
-package main
-import (
-    "bytes"
-    "io"
-    "os"
-    "os/exec"
-)
 func main() {
-    c1 := exec.Command("ls")
-    c2 := exec.Command("wc", "-l")
-    r, w := io.Pipe() 
-    c1.Stdout = w
-    c2.Stdin = r
-    var b2 bytes.Buffer
-    c2.Stdout = &b2
-    c1.Start()
-    c2.Start()
-    c1.Wait()
-    w.Close()
-    c2.Wait()
-    io.Copy(os.Stdout, &b2)
-}
+	netstat := exec.Command("netstat", "-an")
+	awk := exec.Command("awk", "$1~/^tcp[4]?$/ && $NF==\"ESTABLISHED\"")
+	r, w := io.Pipe()
+	defer r.Close()
+	defer w.Close()
 
-
-package main
-import (
-    "os"
-    "os/exec"
-)
-func main() {
-    c1 := exec.Command("ls")
-    c2 := exec.Command("wc", "-l")
-    c2.Stdin, _ = c1.StdoutPipe()
-    c2.Stdout = os.Stdout
-    _ = c2.Start()
-    _ = c1.Run()
-    _ = c2.Wait()
+	netstat.Stdout = w
+	awk.Stdin = r
+	awk.Stdout = os.Stdout
+	awk.Start()
+	netstat.Start()
+	netstat.Wait()
+	awk.Wait()
 }
 ```
 
-例2
+
+
+## 使用`cmd.StdoutPipe()`
+
+```go
+func main() {
+	netstat := exec.Command("netstat", "-an")
+	awk := exec.Command("awk", "$1~/^tcp[4]?$/ && $NF==\"ESTABLISHED\"")
+	awk.Stdin, _ = netstat.StdoutPipe()
+	awk.Stdout = os.Stdout
+	awk.Start()
+	netstat.Run()
+	awk.Wait()
+}
+
+
+// 异步
+func async() {
+    cmd1 := exec.Command("ls", ".")
+    cmd2 := exec.Command("grep", "go")
+    cmd2.Stdout = os.Stdout
+    out, _ := cmd1.StdoutPipe()
+    in, _ := cmd2.StdinPipe()
+    go func() {
+        defer func() {
+            out.Close()
+            in.Close()
+        }()
+        io.Copy(in, out)
+    }()
+    cmd1.Run()
+    cmd2.Run()
+}
+```
+
+
+
+
+
+```go
+func RunTwoCmds(c1, c2 *exec.Cmd) (*bufio.Scanner, bool) {
+	os.Setenv("LANG", "C")
+	c2.Stdin, _ = c1.StdoutPipe() // 连接c1.Stdout和c2.Stdin
+	stdout, _ := c2.StdoutPipe() // 取c2.Stdout
+  
+  // c2.Start -> c1.Run -> 处理c2.Stdout -> c2.Wait
+	if err := c2.Start(); err != nil { 
+		fmt.Println(err)
+	}
+	if err := c1.Run(); err != nil {
+		fmt.Println(err)
+	}
+  
+	var buf1, buf2 bytes.Buffer
+	buf := io.MultiWriter(&buf1, &buf2)
+	io.Copy(buf, stdout) // 因为c2.Wait会关闭c2的stdoutPipe，所以在wait前copy
+	content, _ := io.ReadAll(&buf2)
+
+	if err := c2.Wait(); err != nil {
+		fmt.Println(err)
+	}
+	return bufio.NewScanner(&buf1), strings.Count(string(content), "\n") > 1
+}
+```
+
+
+
+## 使用`sh -c`
 
 ```go
 package main
@@ -316,11 +362,44 @@ import (
 )
 func main() {
 	cmd := "cat /proc/cpuinfo | egrep '^model name' | uniq | awk '{print substr($0, index($0,$4))}'"
-	out, err := exec.Command("bash", "-c", cmd).Output()
+	out, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
 		fmt.Printf("Failed to execute command: %s", cmd)
 	}
 	fmt.Println(string(out))
+}
+```
+
+
+
+## 多个命令
+
+```go
+func main() {
+    cmd1 := exec.Command("ls", ".")
+    cmd2 := exec.Command("grep", "go")
+    cmd3 := exec.Command("grep", "main")
+    cmd3.Stdout = os.Stdout
+    pipe(cmd1, cmd2, cmd3)
+    cmd1.Run()
+    cmd2.Run()
+    cmd3.Run()
+}
+
+func pipe(cmds ...*exec.Cmd) {
+    for i, cmd := range cmds {
+        if i > 0 {
+            out, _ := cmds[i-1].StdoutPipe()
+            in, _ := cmd.StdinPipe()
+            go func() {
+                defer func() {
+                    out.Close()
+                    in.Close()
+                }()
+                io.Copy(in, out)
+            }()
+        }
+    }
 }
 ```
 
@@ -436,3 +515,5 @@ func main() {
 # 参考
 
 [使用os/exec执行命令](https://colobu.com/2017/06/19/advanced-command-execution-in-Go-with-os-exec/)
+
+[Go 系统命令管道操作](https://learnku.com/articles/33592)

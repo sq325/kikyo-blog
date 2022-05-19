@@ -1,5 +1,5 @@
 ---
-title: "Index"
+title: "git常用操作汇总"
 date: 2021-12-05T14:47:36+08:00
 lastmod: 2021-12-05T14:47:36+08:00
 draft: true
