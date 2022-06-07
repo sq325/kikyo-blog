@@ -6,7 +6,7 @@ draft: true
 keywords: []
 description: ""
 tags: ["golang"]
-categories: ["技术Demo"]
+categories: ["使用Demo"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -245,16 +245,6 @@ func NewReadWriter(r *Reader, w *Writer) *ReadWriter
 
 bufio包提供了有缓冲的io，它定义了两个结构体，分别是Reader和Writer, 它们也分别实现了io包中io.Reader和io.Writer接口, 通过传入一个io.Reader的实现对象和一个缓冲池大小参数，可以构造一个bufio.Reader对象，根据bufio.Reader的相关方法便可读取io.Reader中数据流，因为带有缓冲池，读数据会先读到缓冲池，再次读取会先去缓冲池读取，这样减少了io操作，提高了效率；
 
-```go
-
-```
-
-
-
-
-
-
-
 
 
 `func (b *Reader) Read(p []byte) (n int, err error)` 具体读取流程如下：
@@ -274,7 +264,7 @@ bufio包提供了有缓冲的io，它定义了两个结构体，分别是Reader�
 
 # strings.builder
 
-strings.builder可以高效的写入、拼接字符串，其内部封装了一个字节数组，写入时其实是将传入的字节append到内部的字节数组上
+strings.builder可以高效的写入、拼接字符串，其内部封装了一个字节切片，写入时其实是将传入的字节append到内部的字节切片上
 
 ```go
 type Builder struct {
@@ -322,10 +312,6 @@ buf.WriteString("pre ")
 buf.WriteString("after ")
 buf.String() // pre after
 ```
-
-
-
-
 
 
 

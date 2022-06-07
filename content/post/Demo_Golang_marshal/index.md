@@ -1,5 +1,5 @@
 ---
-title: "[Demo]Go语言Marshal技巧"
+title: "[Demo] Go语言Marshal技巧"
 date: 2022-01-05T23:37:14+08:00
 lastmod: 2022-01-05T23:37:14+08:00
 draft: false

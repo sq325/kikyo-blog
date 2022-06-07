@@ -426,6 +426,78 @@ www.baidu.com [36.152.44.96] 443 (https) open
 
 
 
+# 应用层工具
+
+## curl
+
+```bash
+# 用户登陆
+curl -u 'user[:password]' https://www.example.com
+
+# 用户登陆
+curl -u user http://man.linuxde.net 
+
+# 只返回HEAD
+curl -I https://www.baidu.com 
+
+
+# 使用post方法，发送data，自定义HEAD
+curl -H "Content-Type:application/json" -X POST -d '{"uid":"123"}' http://127.0.0.1:3000/rest/test
+curl -d '{"user":"zhangsan", "password":"123456"}' -H 'Content-Type:application/json' http://www.example.com/login
+	#-H 请求头。post json需要添加 -H "Content-Type: application/json"
+	#-X 请求协议，GET|POST|DELETE|PUT。
+	#-d post的body内容，如果是json数据，-d 参数以后，HTTP 请求会自动加上标头"Content-Type:application/x-www-form-urlencoded", 并且会自动将请求转为POST方法， 因此可以省略 "-X POST"
+
+#参数较多时，可以下把参数数据保存到本地文本中，然后从文本中读取参数数据。
+curl -d '@requestData.txt' -H 'Content-Type:application/json' http://www.example.com/login
+
+# GET请求方式发送表单数据，可以直接把参数直接追加url之后
+curl http://www.example.com/login?user=zhansan&password=123456
+
+
+curl -v http://www.example.com
+```
+
+
+
+
+
+## wget
+
+```bash
+# 用户登陆
+curl -u 'user[:password]' https://www.example.com
+
+# 用户登陆
+curl -u user http://man.linuxde.net 
+
+# 只返回HEAD
+curl -I https://www.baidu.com 
+
+
+# 使用post方法，发送data，自定义HEAD
+curl -H "Content-Type:application/json" -X POST -d '{"uid":"123"}' http://127.0.0.1:3000/rest/test
+curl -d '{"user":"zhangsan", "password":"123456"}' -H 'Content-Type:application/json' http://www.example.com/login
+	#-H 请求头。post json需要添加 -H "Content-Type: application/json"
+	#-X 请求协议，GET|POST|DELETE|PUT。
+	#-d post的body内容，如果是json数据，-d 参数以后，HTTP 请求会自动加上标头"Content-Type:application/x-www-form-urlencoded", 并且会自动将请求转为POST方法， 因此可以省略 "-X POST"
+
+#参数较多时，可以下把参数数据保存到本地文本中，然后从文本中读取参数数据。
+curl -d '@requestData.txt' -H 'Content-Type:application/json' http://www.example.com/login
+
+# GET请求方式发送表单数据，可以直接把参数直接追加url之后
+curl http://www.example.com/login?user=zhansan&password=123456
+
+
+curl -v http://www.example.com
+```
+
+
+
+
+
+
+
 # 常见问题
 
 详见本站文章：[tcp常见问题汇总](/post/tcp常见问题汇总/)
