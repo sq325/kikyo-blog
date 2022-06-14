@@ -136,16 +136,16 @@ cpuset可以把容器绑定到某个cpu核心上从而减少cpu上下文切换�
 
 ```yaml
 spec:
-	containers:
-	- name: nginx
-		image: nginx
-		resources:
-			limits:
-				memory: "200Mi"
-				cpu: "2"
-			resources:
-				memory: "200Mi"
-				cpu: "2"
+  containers:
+  - name: nginx
+    image: nginx
+    resources:
+      limits:
+        memory: "200Mi"
+        cpu: "2"
+      resources:
+        memory: "200Mi"
+        cpu: "2"
 ```
 
 ## node标签
