@@ -1,12 +1,12 @@
 ---
 title: "k8s网络构建"
 date: 2022-05-19T20:21:57+08:00
-lastmod: 2022-05-19T20:21:57+08:00
-draft: true
+lastmod: 2022-06-07T17:21:57+08:00
+draft: false
 keywords: []
 description: ""
 tags: ["k8s"]
-categories: ["k8s原理"]
+categories: ["技术"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
