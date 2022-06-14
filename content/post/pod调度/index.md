@@ -56,15 +56,15 @@ kube-scheduler作为k8s负责任务调度的组件，以pod的形式运行在mas
 
 **Predicate算法：**
 
-![image-20220613162709812](/Users/sunquan/Library/Application Support/typora-user-images/image-20220613162709812.png)
+![image-20220613162709812](./image-20220613162709812.png)
 
 **Priority算法：**
 
-![image-20220613162719649](/Users/sunquan/Library/Application Support/typora-user-images/image-20220613162719649.png)
+![image-20220613162719649](./image-20220613162719649.png)
 
 从kube-scheduler调度流程可以看出，node的资源、标签、taint和pod的affinity、标签对调度结果起到调节作用，如下图所示。接下来通过例子详细介绍这些配置。
 
-<img src="/Users/sunquan/Library/Application Support/typora-user-images/image-20220613173818765.png" alt="image-20220613173818765" style="zoom:50%;" />
+<img src="./image-20220613173818765.png" alt="image-20220613173818765" style="zoom:50%;" />
 
 
 
@@ -447,7 +447,7 @@ spec:
   
   调度效果:
   
-  <img src="/Users/sunquan/Library/Application Support/typora-user-images/image-20220613210616358.png" alt="image-20220613210616358" style="zoom:50%;" />
+  <img src="./image-20220613210616358.png" alt="image-20220613210616358" style="zoom:50%;" />
 
 # 参考
 
