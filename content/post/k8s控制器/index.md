@@ -1,7 +1,7 @@
 ---
 title: "k8s控制器"
 date: 2022-06-12T16:46:50+08:00
-lastmod: 2022-06-19T16:46:50+08:00
+lastmod: 2022-06-21T16:46:50+08:00
 draft: false
 keywords: []
 description: ""
@@ -46,7 +46,7 @@ k8s通过控制器模式实现对容器的编排，管理容器的状态和容�
 
 控制器定义包括控制器本身的定义和被控制对象的定义两部分组成，如下图：
 
-<img src="/Users/sunquan/Library/Application Support/typora-user-images/image-20220618210358592.png" alt="image-20220618210358592" style="zoom:50%;" />
+<img src="./image-20220618210358592.png" alt="image-20220618210358592" style="zoom:50%;" />
 
 下面一一介绍常见控制器。
 
@@ -70,8 +70,6 @@ ReplicaSet控制器保证对象的副本数符合预期，当进行滚动升级�
 
 - `ReplicaSet.replicas` -- 副本控制
 - `ReplicaSet`对象个数 -- 版本个数
-
-
 
 ```bash
 kubectl get all -ndeployment
@@ -201,7 +199,7 @@ spec:
 
 如何有可有pv，上述资源文件会创建出如下资源对象：
 
-<img src="/Users/sunquan/Library/Application Support/typora-user-images/image-20220621014205764.png" alt="image-20220621014205764" style="zoom:50%;" />
+<img src="./image-20220621014205764.png" alt="image-20220621014205764" style="zoom:50%;" />
 
 ```yaml
 # pod
@@ -235,7 +233,7 @@ StatefulSet利用Headless Service为所有pod创建唯一网络标识。Headless
 
 ### 存储状态
 
-![image-20220618142431258](/Users/sunquan/Library/Application Support/typora-user-images/image-20220618142431258.jpg)
+![image-20220618142431258](./image-20220618142431258.jpg)
 
 如何保证存储状态不变：
 
