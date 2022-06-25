@@ -1,7 +1,7 @@
 ---
 title: "About The Blog"
 date: 2021-09-07T17:43:52+08:00
-lastmod: 2021-12-04T7:43:52+08:00
+lastmod: 2022-06-22T7:43:52+08:00
 toc: false
 
 ---
@@ -37,7 +37,7 @@ toc: false
 - 操作系统
 - 算法
 
-语言类：
+语言：
 
 - Python
 - Golang
