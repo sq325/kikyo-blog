@@ -1,8 +1,8 @@
 ---
 title: "k8s pod调度配置"
-date: 2022-06-07T20:48:18+08:00
+date: 2022-06-14T20:48:18+08:00
 lastmod: 2022-06-14T20:48:18+08:00
-draft: true
+draft: false
 keywords: []
 description: ""
 tags: ["k8s"]
