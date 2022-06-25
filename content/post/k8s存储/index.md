@@ -77,7 +77,8 @@ k8s中，volume分为临时和永久，临时volume在pod中定义，一般由k8
 
 持久volume根据存储介质不同有不同的服务商，k8s通过CSI接口对其进行调用，其中涉及pv，pvc和storageClass对象，如下图。
 
-<img src="/Users/sunquan/Library/Application Support/typora-user-images/image-20220625104316542.png" alt="image-20220625104316542" style="zoom:50%;" />
+<img src="./image-20220625104316542.png" alt="image-20220625104316542" style="zoom:50%;" />
+
 ## pvc
 
 - k8s资源对象，描述pod需要使用的pv的属性，如大小、读写权限
@@ -128,7 +129,7 @@ spec:
 
 K8S平台为存储提供商提供存储接入的一种声明，通过StorageClass和相应的存储插件(csi/flexvolume)为容器应用提供动态分配存储卷的能力。
 
-<img src="/Users/sunquan/Library/Application Support/typora-user-images/image-20220625104611585.png" alt="image-20220625104611585" style="zoom:50%;" />
+<img src="./image-20220625104611585.png" alt="image-20220625104611585" style="zoom:50%;" />
 
 ```yaml
 #例子
@@ -172,7 +173,7 @@ parameters: #特定类型volume的参数。pv的模版
 
 ## 创建PV过程
 
-<img src="/Users/sunquan/Library/Application Support/typora-user-images/image-20220625105048300.png" alt="image-20220625105048300" style="zoom:67%;" />
+<img src="./image-20220625105048300.png" alt="image-20220625105048300" style="zoom:67%;" />
 
 - attach阶段
 
