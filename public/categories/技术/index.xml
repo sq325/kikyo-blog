@@ -2,129 +2,108 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>技术 on kikyo</title>
-    <link>//localhost:1313/categories/%E6%8A%80%E6%9C%AF/</link>
+    <link>/categories/%E6%8A%80%E6%9C%AF/</link>
     <description>Recent content in 技术 on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 29 Oct 2022 14:52:41 +0800</lastBuildDate>
-    <atom:link href="//localhost:1313/categories/%E6%8A%80%E6%9C%AF/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>io多路复用与goroutine结合</title>
-      <link>//localhost:1313/post/io%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E4%B8%8Egoroutine%E7%BB%93%E5%90%88/</link>
-      <pubDate>Sat, 29 Oct 2022 14:52:41 +0800</pubDate>
-      <guid>//localhost:1313/post/io%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E4%B8%8Egoroutine%E7%BB%93%E5%90%88/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>k8s故障排查</title>
-      <link>//localhost:1313/post/k8s%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5/</link>
-      <pubDate>Tue, 05 Jul 2022 16:39:42 +0800</pubDate>
-      <guid>//localhost:1313/post/k8s%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5/</guid>
-      <description>参考 排错概览</description>
-    </item>
-    <item>
-      <title>k8s认证</title>
-      <link>//localhost:1313/post/k8s%E8%AE%A4%E8%AF%81/</link>
-      <pubDate>Mon, 04 Jul 2022 16:49:25 +0800</pubDate>
-      <guid>//localhost:1313/post/k8s%E8%AE%A4%E8%AF%81/</guid>
-      <description>k8s属于微服务架构，对资源的所有访问和变更都是通过API Server的REST API实现。所有访问API Server的请求都必须通过认证（</description>
-    </item>
+    <lastBuildDate>Tue, 05 Jul 2022 16:49:25 +0800</lastBuildDate>
+    <atom:link href="/categories/%E6%8A%80%E6%9C%AF/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>k8s认证原理</title>
-      <link>//localhost:1313/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/</link>
+      <link>/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/</link>
       <pubDate>Mon, 04 Jul 2022 16:49:25 +0800</pubDate>
-      <guid>//localhost:1313/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/</guid>
+      <guid>/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/</guid>
       <description>k8s属于微服务架构，对资源的所有访问和变更都是通过API Server的REST API实现。所有访问API Server的请求都必须通过认证（</description>
     </item>
     <item>
       <title>k8s存储</title>
-      <link>//localhost:1313/post/k8s%E5%AD%98%E5%82%A8/</link>
+      <link>/post/k8s%E5%AD%98%E5%82%A8/</link>
       <pubDate>Sat, 25 Jun 2022 15:55:51 +0800</pubDate>
-      <guid>//localhost:1313/post/k8s%E5%AD%98%E5%82%A8/</guid>
+      <guid>/post/k8s%E5%AD%98%E5%82%A8/</guid>
       <description>k8s存储概念 volume volume是k8s对存储资源的抽象，一个逻辑存储对象。我们在pod的定义中，container代表计算资源，volume代</description>
     </item>
     <item>
       <title>k8s控制器</title>
-      <link>//localhost:1313/post/k8s%E6%8E%A7%E5%88%B6%E5%99%A8/</link>
+      <link>/post/k8s%E6%8E%A7%E5%88%B6%E5%99%A8/</link>
       <pubDate>Tue, 21 Jun 2022 16:46:50 +0800</pubDate>
-      <guid>//localhost:1313/post/k8s%E6%8E%A7%E5%88%B6%E5%99%A8/</guid>
+      <guid>/post/k8s%E6%8E%A7%E5%88%B6%E5%99%A8/</guid>
       <description>k8s通过控制器模式实现对容器的编排，管理容器的状态和容器间的关系。 控制器定义包括控制器本身的定义和被控制对象的定义两部分组成，如下图： 下面</description>
     </item>
     <item>
       <title>k8s pod调度配置</title>
-      <link>//localhost:1313/post/pod%E8%B0%83%E5%BA%A6/</link>
+      <link>/post/pod%E8%B0%83%E5%BA%A6/</link>
       <pubDate>Tue, 14 Jun 2022 20:48:18 +0800</pubDate>
-      <guid>//localhost:1313/post/pod%E8%B0%83%E5%BA%A6/</guid>
+      <guid>/post/pod%E8%B0%83%E5%BA%A6/</guid>
       <description>本文介绍k8s pod 调度的基本原理，详细介绍具体pod调度相关的配置。 kube-scheduler kube-scheduler作为k8s负责任务调度的组件，以pod的形式</description>
     </item>
     <item>
       <title>k8s网络构建</title>
-      <link>//localhost:1313/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</link>
+      <link>/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</link>
       <pubDate>Tue, 07 Jun 2022 20:21:57 +0800</pubDate>
-      <guid>//localhost:1313/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</guid>
+      <guid>/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</guid>
       <description>k8s网络组件 pod作为k8s的一等公民，拥有自己的网络标识，其中CNI插件专门用于为pod创建大二层网络，每个pod都有CNI分配的其独一</description>
     </item>
     <item>
       <title>shell login和no-login的区别</title>
-      <link>//localhost:1313/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</link>
+      <link>/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</link>
       <pubDate>Wed, 12 Jan 2022 23:14:38 +0800</pubDate>
-      <guid>//localhost:1313/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</guid>
+      <guid>/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</guid>
       <description>&lt;p&gt;shell的登陆方式决定其环境变量的加载，其中interactive shell和non-interactive shell之间的区别很好理解，本文重点介绍bash下的login和no-login。&lt;/p&gt;</description>
     </item>
     <item>
       <title>Golang执行linux命令</title>
-      <link>//localhost:1313/post/demo_golang_exec/</link>
+      <link>/post/demo_golang_exec/</link>
       <pubDate>Tue, 11 Jan 2022 00:02:45 +0800</pubDate>
-      <guid>//localhost:1313/post/demo_golang_exec/</guid>
+      <guid>/post/demo_golang_exec/</guid>
       <description>Doc 1 2 3 4 5 6 7 8 9 10 11 12 13 14 type Cmd struct { Path string Args []string Env []string Dir string Stdin io.Reader Stdout io.Writer Stderr io.Writer ExtraFiles []*os.File SysProcAttr *syscall.SysProcAttr Process *os.Process ProcessState *os.ProcessState } 一般用法 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24</description>
     </item>
     <item>
       <title>Nginx-从url到静态资源</title>
-      <link>//localhost:1313/post/nginx-%E4%BB%8Eurl%E5%88%B0%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90/</link>
+      <link>/post/nginx-%E4%BB%8Eurl%E5%88%B0%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90/</link>
       <pubDate>Thu, 07 Oct 2021 17:31:42 +0800</pubDate>
-      <guid>//localhost:1313/post/nginx-%E4%BB%8Eurl%E5%88%B0%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90/</guid>
+      <guid>/post/nginx-%E4%BB%8Eurl%E5%88%B0%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90/</guid>
       <description>&lt;p&gt;介绍Nginx处理HTTP请求的流程&lt;/p&gt;</description>
     </item>
     <item>
       <title>TCP-常见问题汇总</title>
-      <link>//localhost:1313/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</link>
+      <link>/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</link>
       <pubDate>Mon, 20 Sep 2021 22:17:00 +0800</pubDate>
-      <guid>//localhost:1313/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</guid>
+      <guid>/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</guid>
       <description>&lt;p&gt;使用场景：总结互联网应用会遇到的各种TCP/IP协议、网络报文等问题。&lt;/p&gt;</description>
     </item>
     <item>
       <title>ss-查看linux套接字</title>
-      <link>//localhost:1313/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</link>
+      <link>/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</link>
       <pubDate>Mon, 20 Sep 2021 22:10:51 +0800</pubDate>
-      <guid>//localhost:1313/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</guid>
+      <guid>/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</guid>
       <description>&lt;p&gt;使用场景：在linux环境替代netstat查看socket情况。&lt;/p&gt;</description>
     </item>
     <item>
       <title>使用tcpdump抓包</title>
-      <link>//localhost:1313/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</link>
+      <link>/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</link>
       <pubDate>Mon, 20 Sep 2021 22:09:52 +0800</pubDate>
-      <guid>//localhost:1313/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</guid>
+      <guid>/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</guid>
       <description>&lt;p&gt;使用场景：可以在主机获取各协议的报文，分析通讯问题的利器。&lt;/p&gt;</description>
     </item>
     <item>
       <title>linux-网络工具汇总</title>
-      <link>//localhost:1313/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</link>
+      <link>/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</link>
       <pubDate>Sat, 18 Sep 2021 22:56:16 +0800</pubDate>
-      <guid>//localhost:1313/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</guid>
+      <guid>/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</guid>
       <description>&lt;p&gt;使用场景：汇总常用的linux网络命令，分门别类的介绍各个命令的使用场景，供需要时查阅。&lt;/p&gt;</description>
     </item>
     <item>
       <title>hugo-处理图片的方式</title>
-      <link>//localhost:1313/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/</link>
+      <link>/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/</link>
       <pubDate>Mon, 13 Sep 2021 18:24:31 +0800</pubDate>
-      <guid>//localhost:1313/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/</guid>
+      <guid>/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/</guid>
       <description>&lt;p&gt;这里介绍两种在文章中插入图片的方式，各有利弊，可以根据情况选择。&lt;/p&gt;</description>
     </item>
     <item>
       <title>hugo-模板和内容对应关系</title>
-      <link>//localhost:1313/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/</link>
+      <link>/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/</link>
       <pubDate>Thu, 09 Sep 2021 15:11:51 +0800</pubDate>
-      <guid>//localhost:1313/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/</guid>
+      <guid>/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/</guid>
       <description>&lt;p&gt;对于刚接触hugo的人，阅读本文将了解hugo组织内容的方式，掌握CONTENT、URL、TEMPALTE三者的关系，从结构上理解hugo。本文只介绍内容模板，baseof模板规律也大同小异。&lt;/p&gt;</description>
     </item>
   </channel>

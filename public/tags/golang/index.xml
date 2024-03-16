@@ -2,46 +2,25 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Golang on kikyo</title>
-    <link>//localhost:1313/tags/golang/</link>
+    <link>/tags/golang/</link>
     <description>Recent content in Golang on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 29 Oct 2022 14:52:41 +0800</lastBuildDate>
-    <atom:link href="//localhost:1313/tags/golang/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>io多路复用与goroutine结合</title>
-      <link>//localhost:1313/post/io%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E4%B8%8Egoroutine%E7%BB%93%E5%90%88/</link>
-      <pubDate>Sat, 29 Oct 2022 14:52:41 +0800</pubDate>
-      <guid>//localhost:1313/post/io%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E4%B8%8Egoroutine%E7%BB%93%E5%90%88/</guid>
-      <description></description>
-    </item>
+    <lastBuildDate>Sat, 22 Jan 2022 00:02:45 +0800</lastBuildDate>
+    <atom:link href="/tags/golang/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Golang执行linux命令</title>
-      <link>//localhost:1313/post/demo_golang_exec/</link>
+      <link>/post/demo_golang_exec/</link>
       <pubDate>Tue, 11 Jan 2022 00:02:45 +0800</pubDate>
-      <guid>//localhost:1313/post/demo_golang_exec/</guid>
+      <guid>/post/demo_golang_exec/</guid>
       <description>Doc 1 2 3 4 5 6 7 8 9 10 11 12 13 14 type Cmd struct { Path string Args []string Env []string Dir string Stdin io.Reader Stdout io.Writer Stderr io.Writer ExtraFiles []*os.File SysProcAttr *syscall.SysProcAttr Process *os.Process ProcessState *os.ProcessState } 一般用法 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24</description>
     </item>
     <item>
-      <title>Golang 流处理</title>
-      <link>//localhost:1313/post/golang_buffer%E4%BD%BF%E7%94%A8/</link>
-      <pubDate>Sun, 09 Jan 2022 16:33:42 +0800</pubDate>
-      <guid>//localhost:1313/post/golang_buffer%E4%BD%BF%E7%94%A8/</guid>
-      <description>Go中常用的三种流处理数据结构 bufio bytes.Buffer strings.Builder和strings.Reader 其中strings.Builder主要用来拼接</description>
-    </item>
-    <item>
       <title>[Demo] Go语言Marshal技巧</title>
-      <link>//localhost:1313/post/demo_golang_marshal/</link>
+      <link>/post/demo_golang_marshal/</link>
       <pubDate>Wed, 05 Jan 2022 23:37:14 +0800</pubDate>
-      <guid>//localhost:1313/post/demo_golang_marshal/</guid>
+      <guid>/post/demo_golang_marshal/</guid>
       <description>嵌套struct 避免使用map[string]interface{} interface{}如果为map，则无法index 由于是interfa</description>
-    </item>
-    <item>
-      <title>[Demo] Golang logrus范例</title>
-      <link>//localhost:1313/post/demo_golang_logrus/</link>
-      <pubDate>Wed, 05 Jan 2022 19:15:41 +0800</pubDate>
-      <guid>//localhost:1313/post/demo_golang_logrus/</guid>
-      <description>日切日志 linux操作系统有最大文件限制，需要定期分割日志文件 rotatelogs 思路 rotatelogs周期性产生日志文件 New函数始终return当前日志</description>
     </item>
   </channel>
 </rss>
