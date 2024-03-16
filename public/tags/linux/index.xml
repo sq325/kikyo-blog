@@ -2,38 +2,45 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Linux on kikyo</title>
-    <link>/tags/linux/</link>
+    <link>//localhost:1313/tags/linux/</link>
     <description>Recent content in Linux on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 22 Jan 2022 23:14:38 +0800</lastBuildDate>
-    <atom:link href="/tags/linux/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 29 Oct 2022 14:52:41 +0800</lastBuildDate>
+    <atom:link href="//localhost:1313/tags/linux/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>io多路复用与goroutine结合</title>
+      <link>//localhost:1313/post/io%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E4%B8%8Egoroutine%E7%BB%93%E5%90%88/</link>
+      <pubDate>Sat, 29 Oct 2022 14:52:41 +0800</pubDate>
+      <guid>//localhost:1313/post/io%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E4%B8%8Egoroutine%E7%BB%93%E5%90%88/</guid>
+      <description></description>
+    </item>
     <item>
       <title>shell login和no-login的区别</title>
-      <link>/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</link>
+      <link>//localhost:1313/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</link>
       <pubDate>Wed, 12 Jan 2022 23:14:38 +0800</pubDate>
-      <guid>/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</guid>
+      <guid>//localhost:1313/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</guid>
       <description>&lt;p&gt;shell的登陆方式决定其环境变量的加载，其中interactive shell和non-interactive shell之间的区别很好理解，本文重点介绍bash下的login和no-login。&lt;/p&gt;</description>
     </item>
     <item>
       <title>ss-查看linux套接字</title>
-      <link>/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</link>
+      <link>//localhost:1313/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</link>
       <pubDate>Mon, 20 Sep 2021 22:10:51 +0800</pubDate>
-      <guid>/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</guid>
+      <guid>//localhost:1313/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</guid>
       <description>&lt;p&gt;使用场景：在linux环境替代netstat查看socket情况。&lt;/p&gt;</description>
     </item>
     <item>
       <title>使用tcpdump抓包</title>
-      <link>/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</link>
+      <link>//localhost:1313/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</link>
       <pubDate>Mon, 20 Sep 2021 22:09:52 +0800</pubDate>
-      <guid>/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</guid>
+      <guid>//localhost:1313/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</guid>
       <description>&lt;p&gt;使用场景：可以在主机获取各协议的报文，分析通讯问题的利器。&lt;/p&gt;</description>
     </item>
     <item>
       <title>linux-网络工具汇总</title>
-      <link>/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</link>
+      <link>//localhost:1313/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</link>
       <pubDate>Sat, 18 Sep 2021 22:56:16 +0800</pubDate>
-      <guid>/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</guid>
+      <guid>//localhost:1313/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</guid>
       <description>&lt;p&gt;使用场景：汇总常用的linux网络命令，分门别类的介绍各个命令的使用场景，供需要时查阅。&lt;/p&gt;</description>
     </item>
   </channel>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Logrus on kikyo</title>
+    <link>//localhost:1313/tags/logrus/</link>
+    <description>Recent content in Logrus on kikyo</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 05 Jan 2022 19:15:41 +0800</lastBuildDate>
+    <atom:link href="//localhost:1313/tags/logrus/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>[Demo] Golang logrus范例</title>
+      <link>//localhost:1313/post/demo_golang_logrus/</link>
+      <pubDate>Wed, 05 Jan 2022 19:15:41 +0800</pubDate>
+      <guid>//localhost:1313/post/demo_golang_logrus/</guid>
+      <description>日切日志 linux操作系统有最大文件限制，需要定期分割日志文件 rotatelogs 思路 rotatelogs周期性产生日志文件 New函数始终return当前日志</description>
+    </item>
+  </channel>
+</rss>

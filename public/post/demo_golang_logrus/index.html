@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>[Demo] Golang logrus范例 - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="日切日志 linux操作系统有最大文件限制，需要定期分割日志文件 rotatelogs 思路 rotatelogs周期性产生日志文件 New函数始终return当前日志" />
+
+
+
+
+
+
+<link rel="canonical" href="//localhost:1313/post/demo_golang_logrus/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="[Demo] Golang logrus范例" />
+<meta property="og:description" content="日切日志 linux操作系统有最大文件限制，需要定期分割日志文件 rotatelogs 思路 rotatelogs周期性产生日志文件 New函数始终return当前日志" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="//localhost:1313/post/demo_golang_logrus/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2022-01-05T19:15:41+08:00" />
+<meta property="article:modified_time" content="2022-01-05T19:15:41+08:00" />
+
+<meta itemprop="name" content="[Demo] Golang logrus范例">
+<meta itemprop="description" content="日切日志 linux操作系统有最大文件限制，需要定期分割日志文件 rotatelogs 思路 rotatelogs周期性产生日志文件 New函数始终return当前日志"><meta itemprop="datePublished" content="2022-01-05T19:15:41+08:00" />
+<meta itemprop="dateModified" content="2022-01-05T19:15:41+08:00" />
+<meta itemprop="wordCount" content="1673">
+<meta itemprop="keywords" content="golang,logrus," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="[Demo] Golang logrus范例"/>
+<meta name="twitter:description" content="日切日志 linux操作系统有最大文件限制，需要定期分割日志文件 rotatelogs 思路 rotatelogs周期性产生日志文件 New函数始终return当前日志"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">[Demo] Golang logrus范例</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2022-01-05 </span>
+        <div class="post-category">
+            <a href="/categories/%E4%BD%BF%E7%94%A8demo/"> 使用Demo </a>
+            </div>
+          <span class="more-meta"> 约 1673 字 </span>
+          <span class="more-meta"> 预计阅读 4 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#日切日志">日切日志</a>
+      <ul>
+        <li><a href="#rotatelogs">rotatelogs</a>
+          <ul>
+            <li><a href="#doc">Doc</a></li>
+            <li><a href="#demo">Demo</a></li>
+          </ul>
+        </li>
+        <li><a href="#lumberjack">lumberjack</a>
+          <ul>
+            <li><a href="#doc-1">Doc</a></li>
+            <li><a href="#demo-1">Demo</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#定制">定制</a>
+      <ul>
+        <li><a href="#函数">函数</a></li>
+        <li><a href="#第三方格式">第三方格式</a></li>
+      </ul>
+    </li>
+    <li><a href="#输出到多个writer">输出到多个Writer</a>
+      <ul>
+        <li><a href="#doc-2">Doc</a></li>
+        <li><a href="#demo-2">Demo</a></li>
+      </ul>
+    </li>
+    <li><a href="#使用logger对象">使用logger对象</a>
+      <ul>
+        <li><a href="#默认std对象">默认std对象</a></li>
+      </ul>
+    </li>
+    <li><a href="#hook">hook</a></li>
+    <li><a href="#gin">gin</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <h1 id="日切日志">日切日志</h1>
+<blockquote>
+<p>linux操作系统有最大文件限制，需要定期分割日志文件</p>
+</blockquote>
+<h2 id="rotatelogs">rotatelogs</h2>
+<p>思路</p>
+<ul>
+<li>rotatelogs周期性产生日志文件</li>
+<li>New函数始终return当前日志文件的Writer</li>
+<li>rotatelogs通过软链，不断更新软链指向的日子文件</li>
+</ul>
+<h3 id="doc">Doc</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nx">rotatelogs</span> <span class="s">&#34;github.com/lestrrat-go/file-rotatelogs&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">New</span><span class="p">(</span><span class="nx">p</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">options</span> <span class="o">...</span><span class="nx">Option</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">RotateLogs</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="c1">//RotateLogs是一个Writer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Option</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Name</span><span class="p">()</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Value</span><span class="p">()</span> <span class="kd">interface</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">WithLinkName</span><span class="p">(</span><span class="nx">s</span> <span class="kt">string</span><span class="p">)</span> <span class="nx">Option</span> <span class="c1">// 生成软链，指向最新日志文件
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">WithMaxAge</span><span class="p">(</span><span class="nx">d</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">)</span> <span class="nx">Option</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">WithRotationTime</span><span class="p">(</span><span class="nx">d</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">)</span> <span class="nx">Option</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="demo">Demo</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rotatelogs</span> <span class="s">&#34;github.com/lestrrat-go/file-rotatelogs&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;github.com/sirupsen/logrus&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">logName</span> <span class="o">:=</span> <span class="s">&#34;./logs/prometheus.log&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">logrus</span><span class="p">.</span><span class="nf">SetFormatter</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logrus</span><span class="p">.</span><span class="nx">TextFormatter</span><span class="p">{</span><span class="nx">TimestampFormat</span><span class="p">:</span> <span class="s">&#34;2006-01-02 15:04:05&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">logrus</span><span class="p">.</span><span class="nf">SetLevel</span><span class="p">(</span><span class="nx">logrus</span><span class="p">.</span><span class="nx">InfoLevel</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">writer</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">rotatelogs</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">logName</span><span class="o">+</span><span class="s">&#34;.%Y_%m_%d&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rotatelogs</span><span class="p">.</span><span class="nf">WithLinkName</span><span class="p">(</span><span class="nx">logName</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rotatelogs</span><span class="p">.</span><span class="nf">WithMaxAge</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="mi">24</span><span class="o">*</span><span class="mi">30</span><span class="p">)</span><span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Hour</span><span class="p">),</span> <span class="c1">// 保存30天
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">rotatelogs</span><span class="p">.</span><span class="nf">WithRotationTime</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span><span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Hour</span><span class="p">),</span>  <span class="c1">// 日切
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">logrus</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;init log error: %w&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">logrus</span><span class="p">.</span><span class="nf">SetOutput</span><span class="p">(</span><span class="nx">writer</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="lumberjack">lumberjack</h2>
+<blockquote>
+<p>另一个切割日志的pkg</p>
+</blockquote>
+<h3 id="doc-1">Doc</h3>
+<ul>
+<li><code>lumberjack.Logger</code>实现<code>io.WriteCloser</code></li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">import</span> <span class="s">&#34;gopkg.in/natefinch/lumberjack.v2&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Logger</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Filename</span> <span class="kt">string</span> <span class="c1">// 日志文件名
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">MaxSize</span> <span class="kt">int</span> <span class="c1">// 日志文件达到多大时触发日志文件的分割，MB
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">MaxAge</span> <span class="kt">int</span> <span class="c1">// 日志文件最大的留存时间，天
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">MaxBackups</span> <span class="kt">int</span> <span class="c1">// 分割日志的保留个数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">LocalTime</span> <span class="kt">bool</span> <span class="c1">// 分割日志的时间是否使用本地时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">Compress</span> <span class="kt">bool</span> <span class="c1">// 是否压缩被分割的日志
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="demo-1">Demo</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/rifflock/lfshook&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/sirupsen/logrus&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;gopkg.in/natefinch/lumberjack.v2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">errLogger</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">lumberjack</span><span class="p">.</span><span class="nx">Logger</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Filename</span><span class="p">:</span> <span class="s">&#34;err.txt&#34;</span><span class="p">,</span> <span class="c1">//日志文件路径
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">MaxSize</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="c1">//每个日志文件保存的最大尺寸，单位：M
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">MaxBackups</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span> <span class="c1">//日志文件最多保存多少个备份
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">MaxAge</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span> <span class="c1">//日志文件最多保存多少天
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">Compress</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="c1">//是否压缩
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//logrus.AddHook(h)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="nx">lfHook</span> <span class="o">:=</span> <span class="nx">lfshook</span><span class="p">.</span><span class="nf">NewHook</span><span class="p">(</span><span class="nx">lfshook</span><span class="p">.</span><span class="nx">WriterMap</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">logrus</span><span class="p">.</span><span class="nx">ErrorLevel</span><span class="p">:</span> <span class="nx">errLogger</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">logrus</span><span class="p">.</span><span class="nx">FatalLevel</span><span class="p">:</span> <span class="nx">errLogger</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">},</span><span class="kc">nil</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">logrus</span><span class="p">.</span><span class="nf">AddHook</span><span class="p">(</span><span class="nx">lfHook</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span>  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">logrus</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="s">&#34;error msg&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="定制">定制</h1>
+<h2 id="函数">函数</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">logrus</span><span class="p">.</span><span class="nf">SetLevel</span><span class="p">(</span><span class="nx">logruslevel</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">logrus</span><span class="p">.</span><span class="nf">SetOutput</span><span class="p">(</span><span class="nx">writer</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">logrus</span><span class="p">.</span><span class="nf">SetReportCaller</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">logrus</span><span class="p">.</span><span class="nf">SetFormatter</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">log</span><span class="p">.</span><span class="nx">TextFormatter</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">TimestampFormat</span><span class="p">:</span> <span class="s">&#34;2006-01-02 15:04:05&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">ForceColors</span><span class="p">:</span>  <span class="kc">true</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">EnvironmentOverrideColors</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// FullTimestamp:true,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// DisableLevelTruncation:true,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">})</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="第三方格式">第三方格式</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">nested</span> <span class="s">&#34;github.com/antonfisher/nested-logrus-formatter&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;github.com/sirupsen/logrus&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">logrus</span><span class="p">.</span><span class="nf">SetFormatter</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">nested</span><span class="p">.</span><span class="nx">Formatter</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">HideKeys</span><span class="p">:</span>    <span class="kc">true</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">FieldsOrder</span><span class="p">:</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;component&#34;</span><span class="p">,</span> <span class="s">&#34;category&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">})</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nx">logrus</span><span class="p">.</span><span class="nf">Info</span><span class="p">(</span><span class="s">&#34;info msg&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Feb  8 15:22:59.077 [INFO] info msg
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="输出到多个writer">输出到多个Writer</h1>
+<h2 id="doc-2">Doc</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">import</span> <span class="s">&#34;github.com/sirupsen/logrus&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Logger</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Out</span> <span class="nx">io</span><span class="p">.</span><span class="nx">Writer</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Hooks</span> <span class="nx">LevelHooks</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Formatter</span> <span class="nx">Formatter</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ReportCaller</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Level</span> <span class="nx">Level</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ExitFunc</span> <span class="nx">exitFunc</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Entry</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Logger</span> <span class="o">*</span><span class="nx">Logger</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Data</span> <span class="nx">Fields</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Time</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Level</span> <span class="nx">Level</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Message</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="demo-2">Demo</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/lestrrat-go/file-rotatelogs&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/pkg/errors&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/rifflock/lfshook&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span> <span class="s">&#34;github.com/sirupsen/logrus&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;path&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;time&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">ConfigLocalFilesystemLogger</span><span class="p">(</span><span class="nx">logPath</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">logFileName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">maxAge</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span> <span class="nx">rotationTime</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">baseLogPath</span> <span class="o">:=</span> <span class="nx">path</span><span class="p">.</span><span class="nf">Join</span><span class="p">(</span><span class="nx">logPath</span><span class="p">,</span> <span class="nx">logFileName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">writer</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">rotatelogs</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">baseLogPath</span><span class="o">+</span><span class="s">&#34;-%Y%m%d%H%M.log&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rotatelogs</span><span class="p">.</span><span class="nf">WithLinkName</span><span class="p">(</span><span class="nx">baseLogPath</span><span class="p">),</span> 
+</span></span><span class="line"><span class="cl">		<span class="nx">rotatelogs</span><span class="p">.</span><span class="nf">WithMaxAge</span><span class="p">(</span><span class="nx">maxAge</span><span class="p">),</span>             <span class="c1">// 文件最大保存时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">rotatelogs</span><span class="p">.</span><span class="nf">WithRotationTime</span><span class="p">(</span><span class="nx">rotationTime</span><span class="p">),</span> <span class="c1">// 日志切割时间间隔
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;config local file system logger error. %+v&#34;</span><span class="p">,</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">WithStack</span><span class="p">(</span><span class="nx">err</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">writer1</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">os</span><span class="p">.</span><span class="nf">OpenFile</span><span class="p">(</span><span class="s">&#34;err.log&#34;</span><span class="p">,</span> <span class="nx">os</span><span class="p">.</span><span class="nx">O_RDWR</span><span class="p">|</span><span class="nx">os</span><span class="p">.</span><span class="nx">O_CREATE</span><span class="p">,</span> <span class="mo">0755</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">	<span class="nx">lfHook</span> <span class="o">:=</span> <span class="nx">lfshook</span><span class="p">.</span><span class="nf">NewHook</span><span class="p">(</span><span class="nx">lfshook</span><span class="p">.</span><span class="nx">WriterMap</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nx">DebugLevel</span><span class="p">:</span> <span class="nx">writer</span><span class="p">,</span> <span class="c1">// 为不同级别设置不同的输出目的
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">log</span><span class="p">.</span><span class="nx">InfoLevel</span><span class="p">:</span>  <span class="nx">os</span><span class="p">.</span><span class="nx">Stderr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nx">WarnLevel</span><span class="p">:</span>  <span class="nx">os</span><span class="p">.</span><span class="nx">Stdout</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nx">ErrorLevel</span><span class="p">:</span> <span class="nx">writer1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nx">FatalLevel</span><span class="p">:</span> <span class="nx">writer</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nx">PanicLevel</span><span class="p">:</span> <span class="nx">writer</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">},</span> <span class="o">&amp;</span><span class="nx">log</span><span class="p">.</span><span class="nx">TextFormatter</span><span class="p">{</span><span class="nx">DisableColors</span><span class="p">:</span> <span class="kc">true</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span><span class="p">.</span><span class="nf">SetReportCaller</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="c1">//将函数名和行数放在日志里面
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">log</span><span class="p">.</span><span class="nf">AddHook</span><span class="p">(</span><span class="nx">lfHook</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//ConfigLocalFilesystemLogger1(&#34;log&#34;)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">ConfigLocalFilesystemLogger</span><span class="p">(</span><span class="s">&#34;D:/benben&#34;</span><span class="p">,</span> <span class="s">&#34;sentalog&#34;</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">log</span><span class="p">.</span><span class="nf">Debug</span><span class="p">(</span><span class="s">&#34;调试信息&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">log</span><span class="p">.</span><span class="nf">Info</span><span class="p">(</span><span class="s">&#34;提示信息&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">log</span><span class="p">.</span><span class="nf">Warn</span><span class="p">(</span><span class="s">&#34;警告信息&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">log</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="s">&#34;错误信息&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="mi">500</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">mw</span> <span class="o">:=</span> <span class="nx">io</span><span class="p">.</span><span class="nf">MultiWriter</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stdout</span><span class="p">,</span> <span class="nx">logFile</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">logrus</span><span class="p">.</span><span class="nf">SetOutput</span><span class="p">(</span><span class="nx">mw</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">requestLogger</span> <span class="o">:=</span> <span class="nx">log</span><span class="p">.</span><span class="nf">WithFields</span><span class="p">(</span><span class="nx">log</span><span class="p">.</span><span class="nx">Fields</span><span class="p">{</span><span class="s">&#34;request_id&#34;</span><span class="p">:</span> <span class="nx">request_id</span><span class="p">,</span> <span class="s">&#34;user_ip&#34;</span><span class="p">:</span> <span class="nx">user_ip</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="nx">requestLogger</span><span class="p">.</span><span class="nf">Info</span><span class="p">(</span><span class="s">&#34;something happened on that request&#34;</span><span class="p">)</span> <span class="err">#</span> <span class="nx">will</span> <span class="nx">log</span> <span class="nx">request_id</span> <span class="nx">and</span> <span class="nx">user_ip</span>
+</span></span><span class="line"><span class="cl"><span class="nx">requestLogger</span><span class="p">.</span><span class="nf">Warn</span><span class="p">(</span><span class="s">&#34;something not great happened&#34;</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="使用logger对象">使用logger对象</h1>
+<blockquote>
+<p>适合习惯面向对象编程的人使用</p>
+</blockquote>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/sirupsen/logrus&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;os&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// logrus提供了New()函数来创建一个logrus的实例。
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 项目中，可以创建任意数量的logrus实例。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">var</span> <span class="nx">log</span> <span class="p">=</span> <span class="nx">logrus</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span><span class="p">.</span><span class="nx">Out</span> <span class="p">=</span> <span class="nx">os</span><span class="p">.</span><span class="nx">Stdout</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">log</span><span class="p">.</span><span class="nx">Formatter</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">logrus</span><span class="p">.</span><span class="nx">JSONFormatter</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span><span class="p">.</span><span class="nf">WithFields</span><span class="p">(</span><span class="nx">logrus</span><span class="p">.</span><span class="nx">Fields</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;animal&#34;</span><span class="p">:</span> <span class="s">&#34;walrus&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;size&#34;</span><span class="p">:</span>   <span class="mi">10</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}).</span><span class="nf">Info</span><span class="p">(</span><span class="s">&#34;A group of walrus emerges from the ocean&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="默认std对象">默认std对象</h2>
+<p>如果不新建logger对象，则会使用std这个默认的logger对象</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// github.com/sirupsen/logrus/exported.go
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">std</span> <span class="p">=</span> <span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">StandardLogger</span><span class="p">()</span> <span class="o">*</span><span class="nx">Logger</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="nx">std</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">SetOutput</span><span class="p">(</span><span class="nx">out</span> <span class="nx">io</span><span class="p">.</span><span class="nx">Writer</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">std</span><span class="p">.</span><span class="nf">SetOutput</span><span class="p">(</span><span class="nx">out</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">SetFormatter</span><span class="p">(</span><span class="nx">formatter</span> <span class="nx">Formatter</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">std</span><span class="p">.</span><span class="nf">SetFormatter</span><span class="p">(</span><span class="nx">formatter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">SetReportCaller</span><span class="p">(</span><span class="nx">include</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">std</span><span class="p">.</span><span class="nf">SetReportCaller</span><span class="p">(</span><span class="nx">include</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">SetLevel</span><span class="p">(</span><span class="nx">level</span> <span class="nx">Level</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">std</span><span class="p">.</span><span class="nf">SetLevel</span><span class="p">(</span><span class="nx">level</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="hook">hook</h1>
+<ul>
+<li>不同目的地的分发</li>
+<li>额外添加字段</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// logrus在记录Levels()返回的日志级别的消息时会触发HOOK，
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 按照Fire方法定义的内容修改logrus.Entry。
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 写入日志时拦截，修改logrus.Entry
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Hook</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Levels</span><span class="p">()</span> <span class="p">[]</span><span class="nx">Level</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Fire</span><span class="p">(</span><span class="o">*</span><span class="nx">Entry</span><span class="p">)</span> <span class="kt">error</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">DefaultFieldHook</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">hook</span> <span class="o">*</span><span class="nx">DefaultFieldHook</span><span class="p">)</span> <span class="nf">Fire</span><span class="p">(</span><span class="nx">entry</span> <span class="o">*</span><span class="nx">log</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">entry</span><span class="p">.</span><span class="nx">Data</span><span class="p">[</span><span class="s">&#34;appName&#34;</span><span class="p">]</span> <span class="p">=</span> <span class="s">&#34;MyAppName&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">hook</span> <span class="o">*</span><span class="nx">DefaultFieldHook</span><span class="p">)</span> <span class="nf">Levels</span><span class="p">()</span> <span class="p">[]</span><span class="nx">log</span><span class="p">.</span><span class="nx">Level</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">log</span><span class="p">.</span><span class="nx">AllLevels</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="nx">logger</span><span class="p">.</span><span class="nf">AddHook</span><span class="p">(</span><span class="nx">DefaultFieldHook</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="gin">gin</h1>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// a gin with logrus demo
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">log</span> <span class="p">=</span> <span class="nx">logrus</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Log as JSON instead of the default ASCII formatter.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">log</span><span class="p">.</span><span class="nx">Formatter</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">logrus</span><span class="p">.</span><span class="nx">JSONFormatter</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Output to stdout instead of the default stderr
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Can be any io.Writer, see below for File example
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">f</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">os</span><span class="p">.</span><span class="nf">Create</span><span class="p">(</span><span class="s">&#34;./gin.log&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span><span class="p">.</span><span class="nx">Out</span> <span class="p">=</span> <span class="nx">f</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">gin</span><span class="p">.</span><span class="nf">SetMode</span><span class="p">(</span><span class="nx">gin</span><span class="p">.</span><span class="nx">ReleaseMode</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">gin</span><span class="p">.</span><span class="nx">DefaultWriter</span> <span class="p">=</span> <span class="nx">log</span><span class="p">.</span><span class="nx">Out</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Only log the warning severity or above.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">log</span><span class="p">.</span><span class="nx">Level</span> <span class="p">=</span> <span class="nx">logrus</span><span class="p">.</span><span class="nx">InfoLevel</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 创建一个默认的路由引擎
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">r</span> <span class="o">:=</span> <span class="nx">gin</span><span class="p">.</span><span class="nf">Default</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// GET：请求方式；/hello：请求的路径
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// 当客户端以GET方法请求/hello路径时，会执行后面的匿名函数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nf">GET</span><span class="p">(</span><span class="s">&#34;/hello&#34;</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">WithFields</span><span class="p">(</span><span class="nx">logrus</span><span class="p">.</span><span class="nx">Fields</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="s">&#34;animal&#34;</span><span class="p">:</span> <span class="s">&#34;walrus&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="s">&#34;size&#34;</span><span class="p">:</span>   <span class="mi">10</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}).</span><span class="nf">Warn</span><span class="p">(</span><span class="s">&#34;A group of walrus emerges from the ocean&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// c.JSON：返回JSON格式的数据
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">c</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="nx">gin</span><span class="p">.</span><span class="nx">H</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="s">&#34;message&#34;</span><span class="p">:</span> <span class="s">&#34;Hello world!&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 启动HTTP服务，默认在0.0.0.0:8080启动服务
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nf">Run</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="参考">参考</h1>
+<p><a href="http://www.lsdcloud.com/go/middleware/logrus.html">日志框架logrus</a></p>
+<p><a href="https://xieys.club/go-logrus/">golang日志库logrus的使用</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2022-01-05
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/golang/">golang</a>
+          <a href="/tags/logrus/">logrus</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/demo_golang_marshal/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">[Demo] Go语言Marshal技巧</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/%E5%9B%BE%E8%A7%A3git%E5%88%86%E6%94%AF%E6%93%8D%E4%BD%9C/">
+            <span class="next-text nav-default">git常用操作汇总</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

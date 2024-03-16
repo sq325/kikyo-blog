@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>书摘 on kikyo</title>
-    <link>/categories/%E4%B9%A6%E6%91%98/</link>
+    <link>//localhost:1313/categories/%E4%B9%A6%E6%91%98/</link>
     <description>Recent content in 书摘 on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Tue, 21 Sep 2021 18:00:14 +0800</lastBuildDate>
-    <atom:link href="/categories/%E4%B9%A6%E6%91%98/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="//localhost:1313/categories/%E4%B9%A6%E6%91%98/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>2021年书摘</title>
-      <link>/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/</link>
+      <link>//localhost:1313/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/</link>
       <pubDate>Wed, 08 Sep 2021 18:00:14 +0800</pubDate>
-      <guid>/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/</guid>
+      <guid>//localhost:1313/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/</guid>
       <description>读库2013 第一次知道“读库”是在财新采访张立宪节目中，我对读库的印象是小众图书，看读库的人应该是一帮在这个繁杂的世界寻找一丝宁静、真实的一</description>
     </item>
   </channel>

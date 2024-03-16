@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>k8s认证原理 - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="k8s属于微服务架构，对资源的所有访问和变更都是通过API Server的REST API实现。所有访问API Server的请求都必须通过认证（" />
+
+
+
+
+
+
+<link rel="canonical" href="//localhost:1313/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="k8s认证原理" />
+<meta property="og:description" content="k8s属于微服务架构，对资源的所有访问和变更都是通过API Server的REST API实现。所有访问API Server的请求都必须通过认证（" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="//localhost:1313/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2022-07-04T16:49:25+08:00" />
+<meta property="article:modified_time" content="2022-07-05T16:49:25+08:00" />
+
+<meta itemprop="name" content="k8s认证原理">
+<meta itemprop="description" content="k8s属于微服务架构，对资源的所有访问和变更都是通过API Server的REST API实现。所有访问API Server的请求都必须通过认证（"><meta itemprop="datePublished" content="2022-07-04T16:49:25+08:00" />
+<meta itemprop="dateModified" content="2022-07-05T16:49:25+08:00" />
+<meta itemprop="wordCount" content="4645">
+<meta itemprop="keywords" content="k8s," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="k8s认证原理"/>
+<meta name="twitter:description" content="k8s属于微服务架构，对资源的所有访问和变更都是通过API Server的REST API实现。所有访问API Server的请求都必须通过认证（"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">k8s认证原理</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2022-07-04 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 4645 字 </span>
+          <span class="more-meta"> 预计阅读 10 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#账户体系">账户体系</a>
+      <ul>
+        <li><a href="#service-account">Service Account</a></li>
+        <li><a href="#user">User</a></li>
+      </ul>
+    </li>
+    <li><a href="#k8s-pki">k8s PKI</a></li>
+    <li><a href="#kubeconfig">kubeconfig</a>
+      <ul>
+        <li><a href="#文件内容">文件内容</a></li>
+        <li><a href="#如何配置kubeconfig">如何配置kubeconfig</a></li>
+        <li><a href="#认证流程">认证流程</a></li>
+      </ul>
+    </li>
+    <li><a href="#service-account-tokens">Service Account Tokens</a>
+      <ul>
+        <li><a href="#认证流程-1">认证流程</a></li>
+        <li><a href="#pod如何使用">pod如何使用</a></li>
+      </ul>
+    </li>
+    <li><a href="#bootstrap-tokens">Bootstrap Tokens</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>k8s属于微服务架构，对资源的所有访问和变更都是通过API Server的REST API实现。所有访问API Server的请求都必须通过认证（Authentication）-&gt;授权（Authorization）-&gt;准入（Admission Control）才能被API Server响应，本文介绍认证相关内容。</p>
+<p>认证的含义是验证客户端的身份，这里身份指的是k8s里的账户，对集群内和集群外的账户，k8s有不同的管理方式，后文会详细介绍。k8s使用双向认证，意味着不仅客户端要认证服务端身份，服务端也会对客户端进行认证。所以kubeconfig文件中包含了客户端自己的证书信息。</p>
+<p>k8s常用认证方式大体可分为PKI证书和HTTP Token两种：</p>
+<ul>
+<li>PKI证书
+<ul>
+<li>HTTPS</li>
+<li>kubeconfig</li>
+</ul>
+</li>
+<li>HTTP Bearer Token
+<ul>
+<li>Service Account Tokens</li>
+<li>Static Token File</li>
+<li>Bootstrap Tokens</li>
+</ul>
+</li>
+</ul>
+<p>本文基于kubeadm使用的PKI体系（单根CA证书），重点介绍kubeconfig和Service Account Token两种认证方式，这也是最常用的的认证方式。</p>
+<h1 id="账户体系">账户体系</h1>
+<p>k8s的客户端：</p>
+<ul>
+<li>集群内的应用（pod） — Service Account</li>
+<li>集群外的普通用户（kubectl） — User Account</li>
+<li>匿名访问</li>
+</ul>
+<p>对比两类账户的不同：</p>
+<ul>
+<li>针对的对象不同：Service Account 针对pod中的进程，User针对用户</li>
+<li>作用范围不同：Service Account作用某个namespace，User作用整个集群</li>
+<li>管理对象不同：Service Account由k8s创建并管理，User由使用者自行管理</li>
+</ul>
+<h2 id="service-account">Service Account</h2>
+<blockquote>
+<p>what：k8s资源对象，有专门的controller维护</p>
+<p>why：为集群内的应用（pod）提供认证</p>
+</blockquote>
+<img src="./image-20220703154828647.png" alt="Untitled" style="zoom: 67%;" />
+<p>controller-manager会为每个namespace创建名为default的默认SA（service account），并根据SA的私钥创建token，生成对应的Secret对象，如果pod未明确指定<code>pod.spec.serviceAccountName</code>，则会使用默认SA。接下来准入控制器会为pod添加volume并为所有container挂载，详细的步骤见Service Account Tokens。SA可以通过绑定Role对象来获取相应权限。</p>
+<p>Service Account作为集群创建的用户，其用户名并非是SA资源对象的name，而是有特定的用户名：</p>
+<ul>
+<li><code>system:serviceaccount:(NAMESPACE):(ServiceAccountName)</code></li>
+</ul>
+<p>用户组：</p>
+<ul>
+<li><code>system:serviceaccounts</code></li>
+<li><code>system:serviceaccounts:(NAMESPACE)</code></li>
+</ul>
+<h2 id="user">User</h2>
+<blockquote>
+<p>what：非资源对象，逻辑访问者</p>
+<p>why：为集群外部访问API Server提供认证，由集群管理者自行维护</p>
+</blockquote>
+<p>k8s并不支持普通用户的创建和管理，但只要被集群CA证书签名的证书都可以用来访问API Server，证书中的subject会被当作用户名。</p>
+<h1 id="k8s-pki">k8s PKI</h1>
+<blockquote>
+<p>PKI: Public key infrastructure，包括证书、密钥及其相关的所有操作。</p>
+</blockquote>
+<p>k8s所有组件和kubectl客户端都是通过PKI证书完成TLS双向认证，这意味着服务端也要验证客户端的证书，所以每个服务端都必须有集群CA证书用来验证客户端证书。除了ETCD，其他组件都是通过对应kubeconfig文件进行认证，详情见<a href="#kubeconfig">kubeconfig</a>。</p>
+<p>下图展示了各个组件证书配置情况：</p>
+<img src="./image-20220703160506443.png" alt="image-20220703160506443" style="zoom:67%;" />
+<p>这里SA代表service account，所有集群内pod和API Server的HTTPS请求都通过service account token认证。controller-manager使用sa.key生成此token，API Server使用sa.pub认证token，详见[Service Account Tokens](#Service Account Tokens)。</p>
+<p>ETCD和kubelet需要访问API Server，同时API Server也需要访问它们，所以API Server有专门用于访问它们的密钥对。</p>
+<p>各证书的路径如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># kubeconfig文件</span>
+</span></span><span class="line"><span class="cl">/etc/kubernetes/
+</span></span><span class="line"><span class="cl">  ├── admin.conf
+</span></span><span class="line"><span class="cl"> ├── controller-manager.conf
+</span></span><span class="line"><span class="cl">  ├── scheduler.conf
+</span></span><span class="line"><span class="cl"> └── kubelet.conf
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 各证书和密钥</span>
+</span></span><span class="line"><span class="cl">/etc/kubernetes/pki
+</span></span><span class="line"><span class="cl"> ├── apiserver.crt
+</span></span><span class="line"><span class="cl"> ├── apiserver-etcd-client.crt
+</span></span><span class="line"><span class="cl"> ├── apiserver-etcd-client.key
+</span></span><span class="line"><span class="cl"> ├── apiserver.key
+</span></span><span class="line"><span class="cl"> ├── apiserver-kubelet-client.crt
+</span></span><span class="line"><span class="cl"> ├── apiserver-kubelet-client.key
+</span></span><span class="line"><span class="cl"> ├── ca.crt
+</span></span><span class="line"><span class="cl"> ├── ca.key
+</span></span><span class="line"><span class="cl"> ├── etcd
+</span></span><span class="line"><span class="cl"> │   ├── ca.crt
+</span></span><span class="line"><span class="cl"> │   ├── ca.key
+</span></span><span class="line"><span class="cl"> │   ├── healthcheck-client.crt
+</span></span><span class="line"><span class="cl"> │   ├── healthcheck-client.key
+</span></span><span class="line"><span class="cl"> │   ├── peer.crt
+</span></span><span class="line"><span class="cl"> │   ├── peer.key
+</span></span><span class="line"><span class="cl"> │   ├── server.crt
+</span></span><span class="line"><span class="cl"> │   └── server.key
+</span></span><span class="line"><span class="cl"> ├── front-proxy-ca.crt
+</span></span><span class="line"><span class="cl"> ├── front-proxy-ca.key
+</span></span><span class="line"><span class="cl"> ├── front-proxy-client.crt
+</span></span><span class="line"><span class="cl"> ├── front-proxy-client.key
+</span></span><span class="line"><span class="cl"> ├── sa.key
+</span></span><span class="line"><span class="cl"> └── sa.pub
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="kubeconfig">kubeconfig</h1>
+<blockquote>
+<p>what：用于配置集群访问的文件称为“kubeconfig 文件” ，客户端（user）访问API Server（cluster）的配置文件</p>
+<p>why：可以管理多集群访问配置（context）</p>
+</blockquote>
+<h2 id="文件内容">文件内容</h2>
+<p>kubeconfig文件中包含如下信息：</p>
+<ul>
+<li>集群CA证书和集群ip:port（clusters）</li>
+<li>客户端用户证书或者Token（users)</li>
+<li>客户端用户和集群的绑定信息（context）</li>
+</ul>
+<p>具体如下：</p>
+<img src="./image-20220703162841684.png" alt="image-20220703162841684" style="zoom:50%;" />
+<ul>
+<li>
+<p>clusters</p>
+<blockquote>
+<p>定义kubernetes 集群的端点数据</p>
+</blockquote>
+<ul>
+<li>集群证书</li>
+<li>集群地址</li>
+</ul>
+</li>
+<li>
+<p>users</p>
+<blockquote>
+<p>定义客户端认证凭据</p>
+</blockquote>
+<ul>
+<li>用户名</li>
+<li>用户证书</li>
+<li>用户私钥</li>
+</ul>
+</li>
+<li>
+<p>contexts</p>
+<blockquote>
+<p>关联user和cluster</p>
+</blockquote>
+<ul>
+<li>cluster</li>
+<li>namespace</li>
+<li>user</li>
+</ul>
+</li>
+</ul>
+<h2 id="如何配置kubeconfig">如何配置kubeconfig</h2>
+<p>为外部用户创建一个新kubeconfig文件需要准备好一个密钥，并为此创建签名请求CSR（CertificateSigningRequsest）。然后我们就可以在集群中创建一个CSR资源对象，使用集群CA证书为CSR签名，得到客户端证书。有了证书我们就可以使用<code>kubectl config</code>命令创建或修改kubeconfig文件，一个具体的例子如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 创建私钥</span>
+</span></span><span class="line"><span class="cl">openssl genrsa -out user.key <span class="m">2048</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 创建csr</span>
+</span></span><span class="line"><span class="cl">openssl req -new -key user.key  -subj <span class="s2">&#34;/CN=userName&#34;</span> -out user.csr
+</span></span><span class="line"><span class="cl">cat <span class="s">&lt;&lt;EOF | kubectl apply -f -
+</span></span></span><span class="line"><span class="cl"><span class="s">apiVersion: certificates.k8s.io/v1
+</span></span></span><span class="line"><span class="cl"><span class="s">kind: CertificateSigningRequest
+</span></span></span><span class="line"><span class="cl"><span class="s">metadata:
+</span></span></span><span class="line"><span class="cl"><span class="s">  name: userCSR
+</span></span></span><span class="line"><span class="cl"><span class="s">spec:
+</span></span></span><span class="line"><span class="cl"><span class="s">  request: $(cat user.csr | base64 | tr -d &#39;\n&#39;)
+</span></span></span><span class="line"><span class="cl"><span class="s">  signerName: kubernetes.io/kube-apiserver-client
+</span></span></span><span class="line"><span class="cl"><span class="s">  usages:
+</span></span></span><span class="line"><span class="cl"><span class="s"> - client auth
+</span></span></span><span class="line"><span class="cl"><span class="s">EOF</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># approve csr(CA签名过程）</span>
+</span></span><span class="line"><span class="cl">k get csr
+</span></span><span class="line"><span class="cl">k certificate approve userCSR
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 生成证书文件 .crt</span>
+</span></span><span class="line"><span class="cl">k get csr/userCSR -ojsonpath<span class="o">=</span><span class="s1">&#39;{.status.certificate}&#39;</span> <span class="p">|</span> base64 -d &gt; user.crt
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 生成kubeconfig文件</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 集群信息</span>
+</span></span><span class="line"><span class="cl">kubectl config set-cluster cluster1 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span> --kubeconfig<span class="o">=</span>user.kubeconfig <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span> --server<span class="o">=</span>https://192.168.10.100:6443 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span> --certificate-authority<span class="o">=</span>/etc/kubernetes/pki/ca.crt <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --embed-certs<span class="o">=</span>true# 可看到目录下生成了kc1文件，此文件为kubeconfig文件
+</span></span><span class="line"><span class="cl"><span class="c1"># 用户信息</span>
+</span></span><span class="line"><span class="cl">kubectl config set-credentials userName <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span> --kubeconfig<span class="o">=</span>user.kubeconfig <span class="se">\ </span>
+</span></span><span class="line"><span class="cl"> --client-certificate<span class="o">=</span>user.crt <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span> --client-key<span class="o">=</span>user.key <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span> --embed-certs<span class="o">=</span><span class="nb">true</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># context信息</span>
+</span></span><span class="line"><span class="cl">kubectl config set-context context1<span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span> --kubeconfig<span class="o">=</span>user.kubeconfig <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --cluster<span class="o">=</span>cluster1 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --namespace<span class="o">=</span>default <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --user<span class="o">=</span>userName
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">cat user.kubeconfig <span class="c1"># 查看kubeconfig文件</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>除了使用证书的方式来配置kubeconfig文件，我们也可以使用SA的token来配置kubeconfig，大致步骤是先创建一个SA并且使用ClusterRoleBinding对象和cluster-admin（ClusterRole）进行绑定，获取此SA的token并且配置到kubeconfig文件中，具体步骤如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 创建sa</span>
+</span></span><span class="line"><span class="cl">kubectl -n kube-system create serviceaccount &lt;service-account-name&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 创建clusterrolebinding，绑定sa和cluster-admin</span>
+</span></span><span class="line"><span class="cl">kubectl create clusterrolebinding &lt;clusterrolebinding-name&gt; --clusterrole<span class="o">=</span>cluster-admin --serviceaccount<span class="o">=</span>kube-system:&lt;service-account-name&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 获取sa的token</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">TOKENNAME</span><span class="o">=</span><span class="k">$(</span>kubectl -n kube-system get serviceaccount/&lt;service-account-name&gt; -o <span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.secrets[0].name}&#39;</span><span class="k">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>kubectl -n kube-system get secret <span class="nv">$TOKENNAME</span> -o <span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 测试token访问api server，（-k表示允许不使用证书访问https）</span>
+</span></span><span class="line"><span class="cl">curl -k -H <span class="s2">&#34;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&#34;</span> -X GET <span class="s2">&#34;https://&lt;KUBE-API-IP&gt;:6443/api/v1/nodes&#34;</span> <span class="p">|</span> json_pp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 设置kubeconfig的user和context</span>
+</span></span><span class="line"><span class="cl">kubectl config set-credentials &lt;service-account-name&gt; --token<span class="o">=</span><span class="nv">$TOKEN</span>
+</span></span><span class="line"><span class="cl">kubectl config set-context --current --user<span class="o">=</span>&lt;service-account-name&gt; <span class="c1"># 设置当前context的user为SA</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>此时再使用kubectl命令就是以SA的token进行认证。</p>
+<h2 id="认证流程">认证流程</h2>
+<ol>
+<li>客户端通过kubeconfig文件获取API Server访问地址</li>
+</ol>
+<p>TLS证书方式：</p>
+<ol start="2">
+<li>
+<p>通过TLS协议交换双方证书</p>
+</li>
+<li>
+<p>客户端使用CA证书验证API Server证书</p>
+</li>
+<li>
+<p>API Server通过CA证书验证客户端证书</p>
+</li>
+</ol>
+<p>Token方式：</p>
+<ol start="2">
+<li>
+<p>发起HTTPS请求时在HEAD中添加Token</p>
+</li>
+<li>
+<p>客户端使用CA证书验证API Server证书</p>
+</li>
+<li>
+<p>API Server使用sa.pub验证Token</p>
+</li>
+</ol>
+<h1 id="service-account-tokens">Service Account Tokens</h1>
+<blockquote>
+<p>what：特殊的Bearer Token</p>
+<p>why：用于SA的认证</p>
+</blockquote>
+<p><img src="./image-20220704172912977.png" alt="image-20220704172912977"></p>
+<h2 id="认证流程-1">认证流程</h2>
+<p>如上图示，Service Account Tokens的配置和维护涉及三个组件：</p>
+<ul>
+<li>ServiceAccount 准入插件</li>
+<li>Token 控制器</li>
+<li>ServiceAccount 控制器</li>
+</ul>
+<p>认证步骤：</p>
+<ol>
+<li>ServiceAccount Controller 会为每个namespace生成default SA</li>
+<li>Token Controller（Controller-Manager)根据SA的私钥(sa.key)生成token，API Server根据SA的公钥认证token。</li>
+<li>ServiceAccount AdmissionControl根据pod.spec.serviceAccountName创建volume，并为每个container挂载。</li>
+<li>pod会在访问API Server的HTTP HEAD添加token</li>
+<li>API Server通过service account 的公钥(sa.pub)验证token，完成认证</li>
+</ol>
+<p>service account公钥和私钥分别被配置到了 kube-apiserver 和 kube-controller-manager 的命令行参数中：</p>
+<ul>
+<li><code>--service-account-key-file</code></li>
+<li><code>--service-account-private-key-file</code></li>
+</ul>
+<h2 id="pod如何使用">pod如何使用</h2>
+<p>当定义pod时，API Server接收到创建pod请求，此时ServiceAccount 准入控制器负责为pod添加volume，并挂载到每个containers的rootfs上：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">kube-api-access-&lt;随机后缀&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">projected</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">defaultMode</span><span class="p">:</span><span class="w"> </span><span class="m">420</span><span class="w"> </span><span class="c"># 0644</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">sources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">serviceAccountToken</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">expirationSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">3607</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">token</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">configMap</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">items</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">ca.crt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">ca.crt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">kube-root-ca.crt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">downwardAPI</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">items</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="nt">fieldRef</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nt">fieldPath</span><span class="p">:</span><span class="w"> </span><span class="l">metadata.namespace</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">namespace</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>此volume有三个数据源：</p>
+<ul>
+<li>Namespace：pod所在命名空间，从<code>pod.metadata.namespace</code>获取</li>
+<li>ca.crt：根CA证书，从configmap中获取</li>
+<li>Token：从SA关联的Secret获取。</li>
+</ul>
+<p>卷的挂载路径为：<code>/var/run/secrets/kubernetes.io/serviceaccount</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">k get sa saName -oyaml <span class="c1">#查看secrets字段</span>
+</span></span><span class="line"><span class="cl">k <span class="nb">exec</span> -it podName -- ls -rlt /var/run/sercrets/kubernetes.io/servcieaccount
+</span></span><span class="line"><span class="cl">lrwxrwxrwx    <span class="m">1</span> root     root            <span class="m">12</span> Jun <span class="m">22</span> 08:33 token -&gt; ..data/token <span class="c1"># the service account token that is used for authentication</span>
+</span></span><span class="line"><span class="cl">lrwxrwxrwx    <span class="m">1</span> root     root            <span class="m">16</span> Jun <span class="m">22</span> 08:33 namespace -&gt; ..data/namespace
+</span></span><span class="line"><span class="cl">lrwxrwxrwx    <span class="m">1</span> root     root            <span class="m">13</span> Jun <span class="m">22</span> 08:33 ca.crt -&gt; ..data/ca.crt <span class="c1"># the certificate file that is needed for HTTPS access.</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="bootstrap-tokens">Bootstrap Tokens</h1>
+<blockquote>
+<p>what：一种Bearer Token</p>
+<p>why：新节点加入集群时使用，用于kubelet临时和API Server通讯以配置自己的kubeconfig</p>
+<p>how：一般由kubeadm管理，以secret形式临时保存在kube-system namespace中</p>
+</blockquote>
+<p>启动Bootstrap Tokens先要在API Server打开<code>--enable-bootstrap-token-auth=true</code>参数，并在kubelet中启动<code>--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf</code> 参数。</p>
+<p>新的节点加入集群的流程如下：</p>
+<p><img src="./image-20220704211333142.png" alt="image-20220704211333142"></p>
+<p>kubelet 启动时首先会去寻找kubeconfig文件，如果存在，则使用其直接加入集群，如果不存在，kubelet使用bootstrap.kubeconfig文件建立认证请求，通过 bootstrapping机制签发证书并自动创建kubeconfig文件，再使用新创建的kubeconfig加入集群。</p>
+<p>如果使用kubeadm创建集群，当有新节点需要加入集群时，可以进行如下操作：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 创建bootsrap token</span>
+</span></span><span class="line"><span class="cl">kubeadm token create <span class="c1"># nyjmum.433eyof18cmdkibg</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 获取CA证书的hash</span>
+</span></span><span class="line"><span class="cl">openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt <span class="p">|</span> openssl rsa -pubin -outform der 2&gt;/dev/null <span class="p">|</span> openssl dgst -sha256 -hex <span class="p">|</span> sed <span class="s1">&#39;s/^ .* //&#39;</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 加入集群</span>
+</span></span><span class="line"><span class="cl">kubeadm join apiServerIP:Port --token tokenContent <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>         --discovery-token-ca-cert-hash sha256:bf8fac1ff69d46423082858e4051137122f18d4fed2e98d98fe695498f0753e7
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中<code>nyjmum.433eyof18cmdkibg</code> 即为bootstrap token，格式为<code>[a-z0-9]{6}.[a-z0-9]{16}</code>，第一部分为token-id，第二部分为token-secret。在访问</p>
+<p>我们运行完<code>kubeadm token create</code>命令后， kubeadm会帮我们在kube-system namespace下创建一个名为bootstrap-token-tokenid的secret，token-id和token-secret就记录在其中：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">kubectl get secret bootstrap-token-nyjmum -nkube-system -ojsonpath<span class="o">=</span><span class="s1">&#39;{.data.token-id}&#39;</span><span class="p">|</span> base64 -d <span class="c1"># nyjmum</span>
+</span></span><span class="line"><span class="cl">kubectl get secret bootstrap-token-nyjmum -nkube-system -ojsonpath<span class="o">=</span><span class="s1">&#39;{.data.token-secret}&#39;</span><span class="p">|</span> base64 -d <span class="c1"># 433eyof18cmdkibg</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>有了bootstrap token后，kubelet就可以使用token临时访问API Server，配置自己的kubeconfig文件。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="l">Bearer nyjmum.433eyof18cmdkibg</span><span class="w"> </span><span class="c"># HTTP HEAD</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="参考">参考</h1>
+<p><a href="https://book.douban.com/subject/35424872/">深入剖析Kubernetes</a></p>
+<p><a href="https://www.zhaohuabing.com/post/2020-05-19-k8s-certificate/">一文带你彻底厘清 Kubernetes 中的证书工作机制</a></p>
+<p><a href="https://blog.sctux.com/2018/12/16/kubernetes-auth/#kubernetes-%E4%B8%AD%E7%9A%84%E9%89%B4%E6%9D%83%E6%9C%BA%E5%88%B6">理解Kubernetes中的认证&amp;授权&amp;准入机制</a></p>
+<p><a href="https://kubernetes.io/zh-cn/docs/concepts/security/overview/">官网</a></p>
+<p><a href="https://book.douban.com/subject/35458432/">Kubernetes权威指南：从Docker到Kubernetes实践全接触</a></p>
+<p><a href="https://howieyuen.github.io/docs/kubernetes/kube-apiserver/authentication/#213-bootstrap-tokens">认证机制</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2022-07-05
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/k8s/">k8s</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/k8s%E5%AD%98%E5%82%A8/">
+            <span class="next-text nav-default">k8s存储</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

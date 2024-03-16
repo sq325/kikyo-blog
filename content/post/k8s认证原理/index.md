@@ -2,7 +2,7 @@
 title: "k8s认证原理"
 date: 2022-07-04T16:49:25+08:00
 lastmod: 2022-07-05T16:49:25+08:00
-draft: true
+draft: false
 keywords: []
 description: ""
 tags: ["k8s"]
@@ -58,8 +58,6 @@ k8s常用认证方式大体可分为PKI证书和HTTP Token两种：
 
 本文基于kubeadm使用的PKI体系（单根CA证书），重点介绍kubeconfig和Service Account Token两种认证方式，这也是最常用的的认证方式。
 
-
-
 # 账户体系
 
 k8s的客户端：
@@ -68,15 +66,11 @@ k8s的客户端：
 - 集群外的普通用户（kubectl） — User Account
 - 匿名访问
 
-
-
 对比两类账户的不同：
 
 - 针对的对象不同：Service Account 针对pod中的进程，User针对用户
 - 作用范围不同：Service Account作用某个namespace，User作用整个集群
 - 管理对象不同：Service Account由k8s创建并管理，User由使用者自行管理
-
-
 
 ## Service Account
 
@@ -97,8 +91,6 @@ Service Account作为集群创建的用户，其用户名并非是SA资源对象
 - `system:serviceaccounts`
 - `system:serviceaccounts:(NAMESPACE)`
 
-
-
 ## User
 
 > what：非资源对象，逻辑访问者
@@ -106,8 +98,6 @@ Service Account作为集群创建的用户，其用户名并非是SA资源对象
 > why：为集群外部访问API Server提供认证，由集群管理者自行维护
 
 k8s并不支持普通用户的创建和管理，但只要被集群CA证书签名的证书都可以用来访问API Server，证书中的subject会被当作用户名。
-
-
 
 # k8s PKI
 
@@ -129,48 +119,42 @@ ETCD和kubelet需要访问API Server，同时API Server也需要访问它们，�
 # kubeconfig文件
 /etc/kubernetes/
   ├── admin.conf
-	├── controller-manager.conf
+ ├── controller-manager.conf
   ├── scheduler.conf
-	└── kubelet.conf
+ └── kubelet.conf
 
 # 各证书和密钥
 /etc/kubernetes/pki
-	├── apiserver.crt
-	├── apiserver-etcd-client.crt
-	├── apiserver-etcd-client.key
-	├── apiserver.key
-	├── apiserver-kubelet-client.crt
-	├── apiserver-kubelet-client.key
-	├── ca.crt
-	├── ca.key
-	├── etcd
-	│   ├── ca.crt
-	│   ├── ca.key
-	│   ├── healthcheck-client.crt
-	│   ├── healthcheck-client.key
-	│   ├── peer.crt
-	│   ├── peer.key
-	│   ├── server.crt
-	│   └── server.key
-	├── front-proxy-ca.crt
-	├── front-proxy-ca.key
-	├── front-proxy-client.crt
-	├── front-proxy-client.key
-	├── sa.key
-	└── sa.pub
+ ├── apiserver.crt
+ ├── apiserver-etcd-client.crt
+ ├── apiserver-etcd-client.key
+ ├── apiserver.key
+ ├── apiserver-kubelet-client.crt
+ ├── apiserver-kubelet-client.key
+ ├── ca.crt
+ ├── ca.key
+ ├── etcd
+ │   ├── ca.crt
+ │   ├── ca.key
+ │   ├── healthcheck-client.crt
+ │   ├── healthcheck-client.key
+ │   ├── peer.crt
+ │   ├── peer.key
+ │   ├── server.crt
+ │   └── server.key
+ ├── front-proxy-ca.crt
+ ├── front-proxy-ca.key
+ ├── front-proxy-client.crt
+ ├── front-proxy-client.key
+ ├── sa.key
+ └── sa.pub
 ```
-
-
 
 # kubeconfig
 
 > what：用于配置集群访问的文件称为“kubeconfig 文件” ，客户端（user）访问API Server（cluster）的配置文件
 >
 > why：可以管理多集群访问配置（context）
-
-
-
-
 
 ## 文件内容
 
@@ -207,8 +191,6 @@ kubeconfig文件中包含如下信息：
   - namespace
   - user
 
-
-
 ## 如何配置kubeconfig
 
 为外部用户创建一个新kubeconfig文件需要准备好一个密钥，并为此创建签名请求CSR（CertificateSigningRequsest）。然后我们就可以在集群中创建一个CSR资源对象，使用集群CA证书为CSR签名，得到客户端证书。有了证书我们就可以使用`kubectl config`命令创建或修改kubeconfig文件，一个具体的例子如下：
@@ -228,7 +210,7 @@ spec:
   request: $(cat user.csr | base64 | tr -d '\n')
   signerName: kubernetes.io/kube-apiserver-client
   usages:
-	- client auth
+ - client auth
 EOF
 
 # approve csr(CA签名过程）
@@ -241,27 +223,25 @@ k get csr/userCSR -ojsonpath='{.status.certificate}' | base64 -d > user.crt
 # 生成kubeconfig文件
 # 集群信息
 kubectl config set-cluster cluster1 \
-	--kubeconfig=user.kubeconfig \
-	--server=https://192.168.10.100:6443 \
-	--certificate-authority=/etc/kubernetes/pki/ca.crt \
+ --kubeconfig=user.kubeconfig \
+ --server=https://192.168.10.100:6443 \
+ --certificate-authority=/etc/kubernetes/pki/ca.crt \
   --embed-certs=true# 可看到目录下生成了kc1文件，此文件为kubeconfig文件
 # 用户信息
 kubectl config set-credentials userName \
-	--kubeconfig=user.kubeconfig \ 
-	--client-certificate=user.crt \
-	--client-key=user.key \
-	--embed-certs=true
+ --kubeconfig=user.kubeconfig \ 
+ --client-certificate=user.crt \
+ --client-key=user.key \
+ --embed-certs=true
 # context信息
 kubectl config set-context context1\
-	--kubeconfig=user.kubeconfig \
+ --kubeconfig=user.kubeconfig \
   --cluster=cluster1 \
   --namespace=default \
   --user=userName
 
 cat user.kubeconfig # 查看kubeconfig文件
 ```
-
-
 
 除了使用证书的方式来配置kubeconfig文件，我们也可以使用SA的token来配置kubeconfig，大致步骤是先创建一个SA并且使用ClusterRoleBinding对象和cluster-admin（ClusterRole）进行绑定，获取此SA的token并且配置到kubeconfig文件中，具体步骤如下：
 
@@ -286,8 +266,6 @@ kubectl config set-context --current --user=<service-account-name> # 设置当�
 
 此时再使用kubectl命令就是以SA的token进行认证。
 
-
-
 ## 认证流程
 
 1. 客户端通过kubeconfig文件获取API Server访问地址
@@ -308,8 +286,6 @@ Token方式：
 
 4. API Server使用sa.pub验证Token
 
-
-
 # Service Account Tokens
 
 > what：特殊的Bearer Token
@@ -317,10 +293,6 @@ Token方式：
 > why：用于SA的认证
 
 ![image-20220704172912977](./image-20220704172912977.png)
-
-
-
-
 
 ## 认证流程
 
@@ -330,8 +302,6 @@ Token方式：
 - Token 控制器
 - ServiceAccount 控制器
 
-
-
 认证步骤：
 
 1. ServiceAccount Controller 会为每个namespace生成default SA
@@ -340,14 +310,10 @@ Token方式：
 4. pod会在访问API Server的HTTP HEAD添加token
 5. API Server通过service account 的公钥(sa.pub)验证token，完成认证
 
-
-
 service account公钥和私钥分别被配置到了 kube-apiserver 和 kube-controller-manager 的命令行参数中：
 
 - `--service-account-key-file`
 - `--service-account-private-key-file`
-
-
 
 ## pod如何使用
 
@@ -390,8 +356,6 @@ lrwxrwxrwx    1 root     root            16 Jun 22 08:33 namespace -> ..data/nam
 lrwxrwxrwx    1 root     root            13 Jun 22 08:33 ca.crt -> ..data/ca.crt # the certificate file that is needed for HTTPS access.
 ```
 
-
-
 # Bootstrap Tokens
 
 > what：一种Bearer Token
@@ -400,7 +364,7 @@ lrwxrwxrwx    1 root     root            13 Jun 22 08:33 ca.crt -> ..data/ca.crt
 >
 > how：一般由kubeadm管理，以secret形式临时保存在kube-system namespace中
 
-启动Bootstrap Tokens先要在API Server打开`--enable-bootstrap-token-auth=true `参数，并在kubelet中启动`--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf` 参数。
+启动Bootstrap Tokens先要在API Server打开`--enable-bootstrap-token-auth=true`参数，并在kubelet中启动`--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf` 参数。
 
 新的节点加入集群的流程如下：
 
@@ -419,7 +383,7 @@ openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outfor
 
 # 加入集群
 kubeadm join apiServerIP:Port --token tokenContent \
-	        --discovery-token-ca-cert-hash sha256:bf8fac1ff69d46423082858e4051137122f18d4fed2e98d98fe695498f0753e7
+         --discovery-token-ca-cert-hash sha256:bf8fac1ff69d46423082858e4051137122f18d4fed2e98d98fe695498f0753e7
 ```
 
 其中`nyjmum.433eyof18cmdkibg` 即为bootstrap token，格式为`[a-z0-9]{6}.[a-z0-9]{16}`，第一部分为token-id，第二部分为token-secret。在访问
@@ -436,8 +400,6 @@ kubectl get secret bootstrap-token-nyjmum -nkube-system -ojsonpath='{.data.token
 ```yaml
 Authorization: Bearer nyjmum.433eyof18cmdkibg # HTTP HEAD
 ```
-
-
 
 # 参考
 
