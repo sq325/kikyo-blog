@@ -1,2 +1,2 @@
 User-agent: *
-Sitemap: /sitemap.xml
+Sitemap: https://github.com/sq325/kikyo-blog/sitemap.xml

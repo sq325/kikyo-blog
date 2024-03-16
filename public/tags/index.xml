@@ -2,87 +2,87 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Tags on kikyo</title>
-    <link>/tags/</link>
+    <link>https://github.com/sq325/kikyo-blog/tags/</link>
     <description>Recent content in Tags on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Tue, 05 Jul 2022 16:49:25 +0800</lastBuildDate>
-    <atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://github.com/sq325/kikyo-blog/tags/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>K8s</title>
-      <link>/tags/k8s/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/k8s/</link>
       <pubDate>Mon, 04 Jul 2022 16:49:25 +0800</pubDate>
-      <guid>/tags/k8s/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/k8s/</guid>
       <description></description>
     </item>
     <item>
       <title>Bash</title>
-      <link>/tags/bash/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/bash/</link>
       <pubDate>Wed, 12 Jan 2022 23:14:38 +0800</pubDate>
-      <guid>/tags/bash/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/bash/</guid>
       <description></description>
     </item>
     <item>
       <title>Linux</title>
-      <link>/tags/linux/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/linux/</link>
       <pubDate>Wed, 12 Jan 2022 23:14:38 +0800</pubDate>
-      <guid>/tags/linux/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/linux/</guid>
       <description></description>
     </item>
     <item>
       <title>Golang</title>
-      <link>/tags/golang/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/golang/</link>
       <pubDate>Tue, 11 Jan 2022 00:02:45 +0800</pubDate>
-      <guid>/tags/golang/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/golang/</guid>
       <description></description>
     </item>
     <item>
       <title>Os/Exec</title>
-      <link>/tags/os/exec/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/os/exec/</link>
       <pubDate>Tue, 11 Jan 2022 00:02:45 +0800</pubDate>
-      <guid>/tags/os/exec/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/os/exec/</guid>
       <description></description>
     </item>
     <item>
       <title>Json</title>
-      <link>/tags/json/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/json/</link>
       <pubDate>Wed, 05 Jan 2022 23:37:14 +0800</pubDate>
-      <guid>/tags/json/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/json/</guid>
       <description></description>
     </item>
     <item>
       <title>Struct</title>
-      <link>/tags/struct/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/struct/</link>
       <pubDate>Wed, 05 Jan 2022 23:37:14 +0800</pubDate>
-      <guid>/tags/struct/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/struct/</guid>
       <description></description>
     </item>
     <item>
       <title>Nginx</title>
-      <link>/tags/nginx/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/nginx/</link>
       <pubDate>Thu, 07 Oct 2021 17:31:42 +0800</pubDate>
-      <guid>/tags/nginx/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/nginx/</guid>
       <description></description>
     </item>
     <item>
       <title>TCP</title>
-      <link>/tags/tcp/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/tcp/</link>
       <pubDate>Mon, 20 Sep 2021 22:17:00 +0800</pubDate>
-      <guid>/tags/tcp/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/tcp/</guid>
       <description></description>
     </item>
     <item>
       <title>网络</title>
-      <link>/tags/%E7%BD%91%E7%BB%9C/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/%E7%BD%91%E7%BB%9C/</link>
       <pubDate>Mon, 20 Sep 2021 22:17:00 +0800</pubDate>
-      <guid>/tags/%E7%BD%91%E7%BB%9C/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/%E7%BD%91%E7%BB%9C/</guid>
       <description></description>
     </item>
     <item>
       <title>Hugo</title>
-      <link>/tags/hugo/</link>
+      <link>https://github.com/sq325/kikyo-blog/tags/hugo/</link>
       <pubDate>Mon, 13 Sep 2021 18:24:31 +0800</pubDate>
-      <guid>/tags/hugo/</guid>
+      <guid>https://github.com/sq325/kikyo-blog/tags/hugo/</guid>
       <description></description>
     </item>
   </channel>
