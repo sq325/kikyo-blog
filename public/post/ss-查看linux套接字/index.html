@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>ss-查看linux套接字 - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="使用场景：在linux环境替代netstat查看socket情况。
+" />
+
+
+
+
+
+
+<link rel="canonical" href="/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="ss-查看linux套接字" />
+<meta property="og:description" content="使用场景：在linux环境替代netstat查看socket情况。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-09-20T22:10:51+08:00" />
+<meta property="article:modified_time" content="2021-09-21T22:10:51+08:00" />
+
+<meta itemprop="name" content="ss-查看linux套接字">
+<meta itemprop="description" content="使用场景：在linux环境替代netstat查看socket情况。"><meta itemprop="datePublished" content="2021-09-20T22:10:51+08:00" />
+<meta itemprop="dateModified" content="2021-09-21T22:10:51+08:00" />
+<meta itemprop="wordCount" content="674">
+<meta itemprop="keywords" content="linux,网络," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="ss-查看linux套接字"/>
+<meta name="twitter:description" content="使用场景：在linux环境替代netstat查看socket情况。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">ss-查看linux套接字</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-09-20 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 674 字 </span>
+          <span class="more-meta"> 预计阅读 2 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#常用选项">常用选项</a></li>
+    <li><a href="#统计信息">统计信息</a></li>
+    <li><a href="#ss过滤详解"><code>ss</code>过滤详解</a>
+      <ul>
+        <li><a href="#socket类型过滤">socket类型过滤</a></li>
+        <li><a href="#socket状态过滤">socket状态过滤</a></li>
+        <li><a href="#socket-ip过滤">socket ip过滤</a></li>
+        <li><a href="#socket端口过滤">socket端口过滤</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>使用场景：在linux环境替代netstat查看socket情况。</p>
+<hr>
+<h1 id="常用选项">常用选项</h1>
+<p><strong><code>ss</code></strong></p>
+<ul>
+<li><code>-n</code>, <code>--numeric</code>       现实数字而不是服务名</li>
+<li><code>-r</code>, <code>--resolve</code>       解析服务名</li>
+<li><code>-a</code>, <code>--all</code>           所有socket</li>
+<li><code>-o</code>, <code>--options</code>       计时器信息</li>
+<li><code>-e</code>, <code>--extended</code>      详细的socket信息</li>
+<li><code>-m</code>, <code>--memory</code>        socket memory usage</li>
+<li><code>-p</code>, <code>--processes</code>     process</li>
+<li><code>-i</code>, <code>--info</code>          TCP information</li>
+<li><code>-s</code>, <code>--summary</code>       socket usage summary</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ss -tlr <span class="c1">#把ip和端口解释为域名和协议</span>
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">State    Recv-Q    Send-Q     Local Address:Port             Peer Address:Port             
+</span></span></span><span class="line"><span class="cl"><span class="s1">LISTEN   0         4096             0.0.0.0:rpc.portmapper        0.0.0.0:*                
+</span></span></span><span class="line"><span class="cl"><span class="s1">LISTEN   0         4096        localhost%lo:domain                0.0.0.0:*                
+</span></span></span><span class="line"><span class="cl"><span class="s1">LISTEN   0         128              0.0.0.0:ssh                   0.0.0.0:*                
+</span></span></span><span class="line"><span class="cl"><span class="s1">LISTEN   0         4096                [::]:rpc.portmapper           [::]:*                
+</span></span></span><span class="line"><span class="cl"><span class="s1">LISTEN   0         128                 [::]:ssh                      [::]:*                                                                 
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="统计信息">统计信息</h1>
+<p><code>ss -s</code></p>
+<p><code>netstat -s</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ss -s 
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">Total: 219
+</span></span></span><span class="line"><span class="cl"><span class="s1">TCP:   23 (estab 1, closed 1, orphaned 0, timewait 1)
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">Transport Total     IP        IPv6
+</span></span></span><span class="line"><span class="cl"><span class="s1">RAW       2         0         2        
+</span></span></span><span class="line"><span class="cl"><span class="s1">UDP       6         4         2        
+</span></span></span><span class="line"><span class="cl"><span class="s1">TCP       22        19        3        
+</span></span></span><span class="line"><span class="cl"><span class="s1">INET      30        23        7        
+</span></span></span><span class="line"><span class="cl"><span class="s1">FRAG      0         0         0 
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">netstat -s
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">...
+</span></span></span><span class="line"><span class="cl"><span class="s1">Ip:
+</span></span></span><span class="line"><span class="cl"><span class="s1">    Forwarding: 1				#开启转发
+</span></span></span><span class="line"><span class="cl"><span class="s1">    744449 total packets received		#总收包数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    3 with invalid addresses
+</span></span></span><span class="line"><span class="cl"><span class="s1">    0 forwarded					#转发包数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    0 incoming packets discarded		#接收丢包数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    744440 incoming packets delivered		#接收包数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    927091 requests sent out			#发送包数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    2 outgoing packets dropped
+</span></span></span><span class="line"><span class="cl"><span class="s1">    1 dropped because of missing route
+</span></span></span><span class="line"><span class="cl"><span class="s1">Tcp:
+</span></span></span><span class="line"><span class="cl"><span class="s1">    65775 active connection openings		#主动连接
+</span></span></span><span class="line"><span class="cl"><span class="s1">    16547 passive connection openings		#被动连接
+</span></span></span><span class="line"><span class="cl"><span class="s1">    7513 failed connection attempts		#失败连接
+</span></span></span><span class="line"><span class="cl"><span class="s1">    15956 connection resets received		#接收RST数量
+</span></span></span><span class="line"><span class="cl"><span class="s1">    1 connections established
+</span></span></span><span class="line"><span class="cl"><span class="s1">    492001 segments received			#接收报文数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    537197 segments sent out			#发送报文数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    147803 segments retransmitted		#重传报文数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    0 bad segments received			#错误报文数
+</span></span></span><span class="line"><span class="cl"><span class="s1">    19556 resets sent				#发送RST数量
+</span></span></span><span class="line"><span class="cl"><span class="s1">Udp:
+</span></span></span><span class="line"><span class="cl"><span class="s1">    242253 packets received
+</span></span></span><span class="line"><span class="cl"><span class="s1">...
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="ss过滤详解"><code>ss</code>过滤详解</h1>
+<h2 id="socket类型过滤">socket类型过滤</h2>
+<ul>
+<li><code>-4</code>, &ndash;ipv4</li>
+<li><code>-6</code>, &ndash;ipv6</li>
+<li><code>-0</code>, &ndash;packet</li>
+<li><code>-t</code>, &ndash;tcp</li>
+<li><code>-S</code>, &ndash;sctp</li>
+<li><code>-u</code>, &ndash;udp</li>
+<li><code>-d</code>, &ndash;dccp</li>
+<li><code>-w</code>, &ndash;raw</li>
+<li><code>-x</code>, &ndash;unix</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ss -atn <span class="c1">#tcp+监听的链路</span>
+</span></span><span class="line"><span class="cl">ss -tln <span class="c1">#tcp+listen</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="socket状态过滤">socket状态过滤</h2>
+<p><code>ss -ant state [filter]</code></p>
+<ul>
+<li><code>-l</code>: listening</li>
+</ul>
+<p>可用的状态：<code>established</code>, <code>syn-sent</code>, <code>syn-recv</code>, <code>fin-wait-1</code>, <code>fin-wait-2</code>, <code>time-wait</code>, <code>closed</code>, <code>close-wait</code>, <code>last-ack</code>, <code>listening</code>, <code>closing </code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ss -ant state established <span class="c1">#已经建立的连接</span>
+</span></span><span class="line"><span class="cl">ss -4n state listening
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="socket-ip过滤">socket ip过滤</h2>
+<p><code>ss -ant dst/src [ip]</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ss dst 192.168.1.5
+</span></span><span class="line"><span class="cl">ss dst 192.168.119.113:http
+</span></span><span class="line"><span class="cl">ss dst 192.168.119.113:443
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="socket端口过滤">socket端口过滤</h2>
+<p><code>ss dport/sport [operation] [port]</code></p>
+<ul>
+<li>dport: 目标端口</li>
+<li>sport：源端口</li>
+</ul>
+<p>operation: le, ge, eq, ne, lt, gt</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ss -ant sport lt <span class="m">50</span> <span class="c1">#源端口小于50</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ss -ant state listening <span class="s1">&#39;( sport eq :22 )&#39;</span> <span class="c1">#监听且本地端口等于22</span>
+</span></span><span class="line"><span class="cl">ss -ant state fin-wait-1 <span class="s1">&#39;( sport = :http or sport = :https )&#39;</span> dst 193.233.7/24 <span class="c1">#FIN-WAIT-1状态，源端口为 80 或者 443，目标网络为 193.233.7/24</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-09-21
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/linux/">linux</a>
+          <a href="/tags/%E7%BD%91%E7%BB%9C/">网络</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">TCP-常见问题汇总</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/">
+            <span class="next-text nav-default">使用tcpdump抓包</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

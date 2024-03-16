@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>hugo-模板和内容对应关系 - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="kikyo" /><meta name="description" content="对于刚接触hugo的人，阅读本文将了解hugo组织内容的方式，掌握CONTENT、URL、TEMPALTE三者的关系，从结构上理解hugo。本文只介绍内容模板，baseof模板规律也大同小异。
+" />
+
+
+
+
+
+
+<link rel="canonical" href="/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="hugo-模板和内容对应关系" />
+<meta property="og:description" content="对于刚接触hugo的人，阅读本文将了解hugo组织内容的方式，掌握CONTENT、URL、TEMPALTE三者的关系，从结构上理解hugo。本文只介绍内容模板，baseof模板规律也大同小异。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-09-09T15:11:51+08:00" />
+<meta property="article:modified_time" content="2021-09-13T15:11:51+08:00" />
+
+<meta itemprop="name" content="hugo-模板和内容对应关系">
+<meta itemprop="description" content="对于刚接触hugo的人，阅读本文将了解hugo组织内容的方式，掌握CONTENT、URL、TEMPALTE三者的关系，从结构上理解hugo。本文只介绍内容模板，baseof模板规律也大同小异。"><meta itemprop="datePublished" content="2021-09-09T15:11:51+08:00" />
+<meta itemprop="dateModified" content="2021-09-13T15:11:51+08:00" />
+<meta itemprop="wordCount" content="3162">
+<meta itemprop="keywords" content="hugo," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="hugo-模板和内容对应关系"/>
+<meta name="twitter:description" content="对于刚接触hugo的人，阅读本文将了解hugo组织内容的方式，掌握CONTENT、URL、TEMPALTE三者的关系，从结构上理解hugo。本文只介绍内容模板，baseof模板规律也大同小异。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">hugo-模板和内容对应关系</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-09-09 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 3162 字 </span>
+          <span class="more-meta"> 预计阅读 7 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#从url到一篇文章">从URL到一篇文章</a></li>
+    <li><a href="#section">section</a>
+      <ul>
+        <li><a href="#定义section">定义section</a></li>
+        <li><a href="#section使用的例子">section使用的例子</a></li>
+      </ul>
+    </li>
+    <li><a href="#内容和url的对应关系">内容和URL的对应关系</a></li>
+    <li><a href="#内容和模板的对应关系">内容和模板的对应关系</a>
+      <ul>
+        <li><a href="#single-page">single page</a>
+          <ul>
+            <li><a href="#模板名称">模板名称</a></li>
+            <li><a href="#模板路径">模板路径</a></li>
+          </ul>
+        </li>
+        <li><a href="#list-page">list page</a>
+          <ul>
+            <li><a href="#模板名称-1">模板名称</a></li>
+            <li><a href="#模板路径-1">模板路径</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#最佳实践">最佳实践</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>对于刚接触hugo的人，阅读本文将了解hugo组织内容的方式，掌握CONTENT、URL、TEMPALTE三者的关系，从结构上理解hugo。本文只介绍内容模板，baseof模板规律也大同小异。</p>
+<hr>
+<h1 id="从url到一篇文章">从URL到一篇文章</h1>
+<p><img src="%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B.svg" alt="访问流程"></p>
+<p>当访问一个静态网页，会通过URL定位到所需页面，如上图。hugo生成的页面由两部分组成，一部分是页面的框架，另一部分是页面的内容，分别对应模板和文章。所以我们使用hugo搭建Blog时，需要设计两层对应关系：</p>
+<ul>
+<li>内容和URL的对应关系</li>
+<li>内容和模板的对应关系</li>
+</ul>
+<p>内容可以是我们所写的一篇文章，即一个md文件，也可以是一个文章列表，列出某个类别下所有文章。hugo为我们自动生成两种列表页面，一个是分类页面(category page)，另一个是标签页面(taxonomy page)。我们无需人工指定这两个页面的内容，只需在文章的扉页(front matter)给定categories和tags属性，hugo自动为我们分类并创建列表页面。</p>
+<p>还有一种列表页面需要我们定义，即section页面。section为我们提供了一种组织文章的方式，通过构建content的目录结构，我们可以任意分类文章。打个恰当的比方，文章和section的关系类似文件和文件夹的关系。</p>
+<p>下面先简单介绍下section。</p>
+<h1 id="section">section</h1>
+<h2 id="定义section">定义section</h2>
+<blockquote>
+<p>section的元数据由其下的_index.md定义，内容由其下文章构成。</p>
+</blockquote>
+<ul>
+<li><code>content/</code>下一级目录为section</li>
+<li>其他目录中包含_index.md即为section</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">content</span>
+</span></span><span class="line"><span class="cl"><span class="err">└──</span> <span class="nx">blog</span>        <span class="o">&lt;--</span> <span class="nx">Section</span><span class="p">,</span> <span class="nx">content下的一级目录</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├──</span> <span class="nx">funny</span><span class="o">-</span><span class="nx">cats</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="err">├──</span> <span class="nx">mypost</span><span class="p">.</span><span class="nx">md</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="err">└──</span> <span class="nx">kittens</span>         <span class="o">&lt;--</span> <span class="nx">Section</span><span class="p">,</span> <span class="nx">含有</span> <span class="nx">_index</span><span class="p">.</span><span class="nx">md</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>       <span class="err">└──</span> <span class="nx">_index</span><span class="p">.</span><span class="nx">md</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└──</span> <span class="nx">tech</span>                <span class="o">&lt;--</span> <span class="nx">Section</span><span class="p">,</span> <span class="nx">含有</span> <span class="nx">_index</span><span class="p">.</span><span class="nx">md</span>
+</span></span><span class="line"><span class="cl">        <span class="err">└──</span> <span class="nx">_index</span><span class="p">.</span><span class="nx">md</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>文章扉页模板和页面模板的位置也和section有关，如<code>archetypes/{{section}}/default.md</code>和<code>layouts/{{section}}/single.html</code>。</p>
+<h2 id="section使用的例子">section使用的例子</h2>
+<p>创建<code>content/posts/_index.md</code>，内容如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l">My Go Journey</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="ld">2017-03-23</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">publishdate</span><span class="p">:</span><span class="w"> </span><span class="ld">2017-03-24</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="l">I decided to start learning Go in March 2017.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="l">Follow my journey through this new blog.</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>在模板中展示section内容：<code>layouts/_default/list.html</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-html" data-lang="html"><span class="line"><span class="cl">{{ define &#34;main&#34; }}
+</span></span><span class="line"><span class="cl"><span class="p">&lt;</span><span class="nt">main</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">&lt;</span><span class="nt">article</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">&lt;</span><span class="nt">header</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>{{.Title}}<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span> <span class="c">&lt;!--如果_index.md没定义，Title为section name，即posts，否则为文章标题，即扉页中的title属性值--&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">&lt;/</span><span class="nt">header</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">        {{.Content}} <span class="c">&lt;!-- &#34;{{.Content}}&#34; 为_index.md中的内容，如果没定义则为空 --&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">&lt;/</span><span class="nt">article</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">&lt;</span><span class="nt">ul</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- Ranges through content/posts/*.md --&gt;</span>
+</span></span><span class="line"><span class="cl">    {{ range .Pages }}
+</span></span><span class="line"><span class="cl">        <span class="p">&lt;</span><span class="nt">li</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&#34;{{.Permalink}}&#34;</span><span class="p">&gt;</span>{{.Date.Format &#34;2006-01-02&#34;}} | {{.Title}}<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">&lt;/</span><span class="nt">li</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">    {{ end }}
+</span></span><span class="line"><span class="cl">    <span class="p">&lt;/</span><span class="nt">ul</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="p">&lt;/</span><span class="nt">main</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">{{ end }}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="内容和url的对应关系">内容和URL的对应关系</h1>
+<p>content的目录结构决定了内容和URL的对应关系，其中<a href="#section">section</a>起着重要作用。</p>
+<p>section在content目录下是一个文件夹，在页面中为一个列表页面。</p>
+<p>不同页面类型和内容类型对应的URL如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>页面类型</th>
+<th>内容类型</th>
+<th>说明</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>single</td>
+<td>regular</td>
+<td>常规内容页面</td>
+<td><code>/{{section}}/{{title}}/</code></td>
+</tr>
+<tr>
+<td></td>
+<td>home</td>
+<td>主页</td>
+<td><code>/</code></td>
+</tr>
+<tr>
+<td>list</td>
+<td>section</td>
+<td>section页面</td>
+<td><code>/{{section}}/</code></td>
+</tr>
+<tr>
+<td></td>
+<td>taxonomy</td>
+<td>分类页面</td>
+<td><code>/tags/</code></td>
+</tr>
+<tr>
+<td></td>
+<td>term</td>
+<td>特定类别页面</td>
+<td><code>/tags/{{term}}/</code></td>
+</tr>
+<tr>
+<td></td>
+<td>category</td>
+<td>分类页面</td>
+<td><code>/categories/</code></td>
+</tr>
+</tbody>
+</table>
+<h1 id="内容和模板的对应关系">内容和模板的对应关系</h1>
+<blockquote>
+<p>hugo会根据页面的类型寻找对应的模板</p>
+</blockquote>
+<p>模板位于layouts目录下，如果使用主题，则在<code>themes/{{theme}}/layouts/</code>下。其目录结构和页面的内容类型相对应，每个类型一个文件夹，如下图。其中<code>_default/</code>是默认模板的存放位置，如果没有对应内容类型的模板，则在此下寻找模板。</p>
+<p>这里特别说明的是页面的type属性，<code>{{type}}/</code>文件夹下的模板是根据文章的type属性进行匹配，type由文章扉页来定义，默认值为文章所在目录的名称，所以缺损值和<code>{{section}}</code>一致。</p>
+<p><img src="layouts.svg" alt="layouts"></p>
+<p>hugo选择渲染模板的主要依据：<strong>内容类型</strong></p>
+<p>比较特殊的是主页，其模板就位于layouts根目录下，一般为<code>layouts/index.md</code>。</p>
+<p>hugo所有页面可以简单分为single page和list page，下面分别介绍single page和list page的模板选择规律。</p>
+<h2 id="single-page">single page</h2>
+<blockquote>
+<p>由单一的文章或者非列表内容组成的页面称为single page。</p>
+</blockquote>
+<h3 id="模板名称">模板名称</h3>
+<p>常规页面内容就是一篇文章的内容，模板名称为<code>single.html</code>。而主页的模板名称为<code>index.html</code>或<code>home.html</code>，当然主页也可以显示列表内容，最简单的做法就是把<code>layouts/_default/list.html/</code>复制到<code>layouts/index.html</code>。</p>
+<p><img src="single_page_html.svg" alt="single_page_html"></p>
+<h3 id="模板路径">模板路径</h3>
+<p>single page的模板路径和模板名称的对应关系如下图，编号为优先级关系。</p>
+<p>最佳实践:</p>
+<ul>
+<li>常规文章页面使用<code>layouts/{{section}}/single.html</code>作为模板。</li>
+<li>主页使用<code>layouts/index.html</code>作为模板。</li>
+</ul>
+<p><img src="single_page.svg" alt="single page"></p>
+<h2 id="list-page">list page</h2>
+<blockquote>
+<p>许多文章标题和摘要组成的页面称为列表页面(list page)。</p>
+</blockquote>
+<p>taxonomy和term页面由hugo根据每个文章扉页定义的tags自动生成。</p>
+<p>section页面会根据其下文章和_index.md内容生成。</p>
+<h3 id="模板名称-1">模板名称</h3>
+<p>列表页面的模板名称根据列表页面各有不同，默认是<code>list.html</code>。</p>
+<p><img src="list_page_html.svg" alt="list_page_html"></p>
+<p>这里可以为每种类型的列表页面都定义模板，如果没给定模板，所有列表页面都使用<code>layouts/_default/list.html</code>模板。本文最后的例子可以作参考。</p>
+<h3 id="模板路径-1">模板路径</h3>
+<p>section和taxonomy页面的模板优先级如下图，分别用蓝色和红色线条表示。其中taxonomy页面最常用的模版名为<code>terms.html</code>，用于展示所有tags。</p>
+<p>hugo根据扉页的设置，默认对文章进行两个维度的分类：</p>
+<ul>
+<li>tag -&gt; <code>/tags/</code></li>
+<li>category -&gt; <code>/categories/</code></li>
+</ul>
+<p>这两个页面都是列表页面，大多数情况使用相同的模板。</p>
+<p><img src="list_page.svg" alt="list page"></p>
+<p>当你进入到某一tag后，就进入了term页面，模板优先级如下图。在term页面中，会列出该tag下的所有文章标题。</p>
+<p><img src="term_page.svg" alt="term_page"></p>
+<h1 id="最佳实践">最佳实践</h1>
+<p>这里以<a href="https://github.com/aozaki-kuro/Aozaki">Aozaki&rsquo;s Blog</a>为例，适当简化，下图是<code>content/</code>目录结构，posts是一个section，里面每个文件夹是一篇文章，index.md为文章内容。</p>
+<p>可能你会疑惑为何要在section下再嵌套一层文件夹，其实这么做主要目的是让图片和文章能放在同一级目录，这样就可以在markdown文件中使用相对路径引用图片，无论是使用<code>hugo server -D</code>进行预览还是构建到<code>public/</code>下，图片都能正常显示。熟悉nginx的小伙伴应该知道，如果URL访问的是一个文件夹，则返回其下的index.html。这里也是同样的道理，当访问<code>/posts/{{article_name}}/</code>，其实会返回index.md的内容。</p>
+<p>category页面和taxonomy页面都使用<code>layouts/taxonomy/</code>下的模板进行渲染。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-powershell" data-lang="powershell"><span class="line"><span class="cl"><span class="n">content</span><span class="p">/</span>
+</span></span><span class="line"><span class="cl"><span class="err">└─</span><span class="n">posts</span><span class="p">/</span> <span class="c"># section</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>  <span class="n">about</span><span class="p">.</span><span class="nb">md </span><span class="c">#模板：layouts/posts/single.html #URL：/about/</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span><span class="mf">2020</span><span class="p">-</span><span class="mf">08</span><span class="p">-</span><span class="mf">04</span> <span class="n">Ghost</span> <span class="n">of</span> <span class="n">Tsushima</span><span class="p">/</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>      <span class="mf">0002</span><span class="p">.</span><span class="py">jpg</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>      <span class="mf">0004</span><span class="p">.</span><span class="py">jpg</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>      <span class="mf">0005</span><span class="p">.</span><span class="py">jpg</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>      <span class="n">index</span><span class="p">.</span><span class="nb">md </span><span class="c">#模板：layouts/posts/single.html #URL：/posts/2020-08-04 Ghost of Tsushima/</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span><span class="mf">2020</span><span class="p">-</span><span class="mf">08</span><span class="p">-</span><span class="mf">05</span> <span class="n">Why</span> <span class="n">Blogging</span><span class="p">/</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>      <span class="mf">0001</span><span class="p">.</span><span class="py">jpg</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>      <span class="n">index</span><span class="p">.</span><span class="nb">md </span><span class="c">#模板：layouts/posts/single.html #URL：/posts/2020-08-05 Why Blogging/</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span><span class="mf">2020</span><span class="p">-</span><span class="mf">08</span><span class="p">-</span><span class="mf">09</span> <span class="n">troubled</span> <span class="n">hugo</span><span class="p">/</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>      <span class="mf">0001</span><span class="p">.</span><span class="py">jpg</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>      <span class="n">index</span><span class="p">.</span><span class="nb">md </span><span class="c">#模板：layouts/posts/single.html #URL：/posts/2020-08-09 troubled hugo/</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span><span class="n">Suisei</span> <span class="p">-</span> <span class="n">Rankings</span><span class="p">/</span>
+</span></span><span class="line"><span class="cl">            <span class="mf">0002</span><span class="p">.</span><span class="py">jpg</span>
+</span></span><span class="line"><span class="cl">            <span class="n">index</span><span class="p">.</span><span class="nb">md </span><span class="c">#模板：layouts/posts/single.html #URL：/posts/Suisei - Rankings/</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl"><span class="n">layouts</span><span class="p">/</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="mf">404</span><span class="p">.</span><span class="py">html</span> <span class="c">#错误页面</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="n">index</span><span class="p">.</span><span class="py">html</span> <span class="c">#home page</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">├─</span><span class="n">posts</span><span class="p">/</span> <span class="c"># section</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>      <span class="n">rss</span><span class="p">.</span><span class="py">xml</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>      <span class="n">single</span><span class="p">.</span><span class="py">html</span> 
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">├─</span><span class="n">taxonomy</span><span class="p">/</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>      <span class="n">list</span><span class="p">.</span><span class="py">html</span> <span class="c">#/tags/{{tag}}/ #/categories/{{category}}/</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>      <span class="n">rss</span><span class="p">.</span><span class="py">xml</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>      <span class="n">terms</span><span class="p">.</span><span class="py">html</span> <span class="c">#/tags/ #/categories/</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">└─</span><span class="n">_default</span><span class="p">/</span>
+</span></span><span class="line"><span class="cl">       <span class="n">baseof</span><span class="p">.</span><span class="py">html</span> <span class="c">#页面骨架</span>
+</span></span><span class="line"><span class="cl">       <span class="n">section</span><span class="p">.</span><span class="py">html</span> <span class="c">#/posts/</span>
+</span></span><span class="line"><span class="cl">       <span class="n">single</span><span class="p">.</span><span class="py">html</span>
+</span></span><span class="line"><span class="cl">       <span class="n">single</span><span class="p">.</span><span class="nb">md
+</span></span></span><span class="line"><span class="cl"><span class="nb"></span>       <span class="n">summary</span><span class="p">.</span><span class="py">html</span> <span class="c">#list page下的摘要</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h1 id="参考">参考</h1>
+<p><a href="https://gohugo.io/templates/lookup-order/">hugo官网</a></p>
+<p><a href="https://github.com/aozaki-kuro/Aozaki">Aozaki</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">kikyo</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-09-13
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/hugo/">hugo</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">hugo-处理图片的方式</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/">
+            <span class="next-text nav-default">2021年书摘</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

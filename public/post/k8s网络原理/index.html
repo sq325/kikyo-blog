@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>k8s网络构建 - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="k8s网络组件 pod作为k8s的一等公民，拥有自己的网络标识，其中CNI插件专门用于为pod创建大二层网络，每个pod都有CNI分配的其独一" />
+
+
+
+
+
+
+<link rel="canonical" href="/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="k8s网络构建" />
+<meta property="og:description" content="k8s网络组件 pod作为k8s的一等公民，拥有自己的网络标识，其中CNI插件专门用于为pod创建大二层网络，每个pod都有CNI分配的其独一" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2022-06-07T20:21:57+08:00" />
+<meta property="article:modified_time" content="2022-06-07T17:21:57+08:00" />
+
+<meta itemprop="name" content="k8s网络构建">
+<meta itemprop="description" content="k8s网络组件 pod作为k8s的一等公民，拥有自己的网络标识，其中CNI插件专门用于为pod创建大二层网络，每个pod都有CNI分配的其独一"><meta itemprop="datePublished" content="2022-06-07T20:21:57+08:00" />
+<meta itemprop="dateModified" content="2022-06-07T17:21:57+08:00" />
+<meta itemprop="wordCount" content="2676">
+<meta itemprop="keywords" content="k8s," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="k8s网络构建"/>
+<meta name="twitter:description" content="k8s网络组件 pod作为k8s的一等公民，拥有自己的网络标识，其中CNI插件专门用于为pod创建大二层网络，每个pod都有CNI分配的其独一"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">k8s网络构建</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2022-06-07 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 2676 字 </span>
+          <span class="more-meta"> 预计阅读 6 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#k8s网络组件">k8s网络组件</a>
+      <ul>
+        <li><a href="#cni与overlay网络">CNI与overlay网络</a></li>
+        <li><a href="#kube-proxy与service实现">kube-proxy与service实现</a></li>
+        <li><a href="#coredns与服务发现">coreDNS与服务发现</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <h1 id="k8s网络组件">k8s网络组件</h1>
+<p>pod作为k8s的一等公民，拥有自己的网络标识，其中CNI插件专门用于为pod创建大二层网络，每个pod都有CNI分配的其独一无二的网络标识，k8s可以合理调度pod不用担心网络的限制。</p>
+<p>通常，pod通过service对外提供服务，这就要求所有到达service的请求都能被正确转发到对应pod上，kube-proxy就负责完成这个工作。</p>
+<p>类比于互联网上访问网站，我们希望通过service name就可以访问service而不是要记住各式各样的ip。coreDNS就负责服务发现和域名解析。</p>
+<p>本文将对构建k8s网络的组件进行介绍：</p>
+<ul>
+<li>CNI插件</li>
+<li>kube-proxy</li>
+<li>coredns</li>
+</ul>
+<p>这三个组件各司其职，帮助我们打通pod间的通讯。</p>
+<h2 id="cni与overlay网络">CNI与overlay网络</h2>
+<p>我们先从承载pod的overlay网络说起。</p>
+<blockquote>
+<p>overlay网络是通过网络虚拟化技术，在同一张Underlay网络上构建出的一张或者多张虚拟的逻辑网络。在overlay网络中，设备之间可以通过逻辑链路，按照需求完成互联形成overlay拓扑</p>
+</blockquote>
+<p>通常有两种方案实现overlay网络：</p>
+<ul>
+<li><strong>隧道方案</strong>：通过Vxlan或UDP封装，实现在一个三层或二层网络中透明传输pod间的二层数据。如flannel的UDP模式和Vxlan模式。</li>
+<li><strong>路由方案</strong>：通过配置路由规则，实现在一个三层网络中透明传输pod间的二层数据。如calico的方案。</li>
+</ul>
+<p>本文以flannel的UDP模式为例，介绍CNI如何创建linux虚拟网络设备并正确转发pod的流量。</p>
+<p>首先，flannel以DaemonSet在每个node上运行一个pod。flannel会在每个node创建虚拟网络设备，并为每个pod的基础容器配置网络。</p>
+<p>node虚拟网络设备：</p>
+<ul>
+<li>cni0网桥</li>
+<li>flannel.1(tun设备)</li>
+<li>veth pair</li>
+</ul>
+<p>pod网络设备：</p>
+<ul>
+<li>eth0(网络接口)</li>
+<li>veth pair</li>
+</ul>
+<p>下图为pod to pod通讯流程。</p>
+<p><img src="./image-20220606003802069.png" alt="image-20220606003802069"></p>
+<p>flannel会为pod创建eth0网络接口，通过和node中的cni0网桥设置veth pair，可以把数据传输到node上。每创建一个pod都会创建一对 veth pair。其中一端是pod中的eth0，另一端是cni0。pod从网卡eth0发出的流量都会发送到cni0网桥上。</p>
+<p>数据抵达cni0后会根据路由规则(flannel设置)转发到flannel.1上，flannel.1是tun设备，可以想象成flanneld进程埋在内核态的钩子，flanneld需要对数据包进行处理，但flanneld在用户态，linux的网络协议栈在内核态，flannel.1的作用就是把数据包从内核态切换到用户态进行处理。</p>
+<p>如果flannel工作在UDP模式，flanned通过socket读取flanne.1数据，处理并发送给对端node的flanneld。如果在vxlan模式中flanned作用是获取必要的mac地址，ip地址信息，没有直接处理数据流。</p>
+<p>flanneld维护了一份全局node的网络表，通过flannel.1接收到请求后，根据node表，将请求二次封装为UDP包，扔给eth0，由eth0出口进入物理网路发送给目的node。flanneld和对端flanneld通讯和普通进程间通讯过程一致。</p>
+<p>flannel相当于为pod之间通讯建立了一条隧道，所有处理对pod都是透明的，到此一个承载pod的overlay网络搭建完成。</p>
+<h2 id="kube-proxy与service实现">kube-proxy与service实现</h2>
+<p>service出现的目的是为了解决以下问题：</p>
+<ul>
+<li>为pod提供一个稳定的对外服务地址</li>
+<li>实现简单的负载均衡</li>
+</ul>
+<p>kube-proxy就是实现service的k8s组件，实现步骤如下：</p>
+<ul>
+<li>service创建后kube-proxy会去apiserver注册，并保存etcd</li>
+<li>kube-proxy从etcd获取service信息，并把访问规则写入iptables</li>
+<li>请求根据iptables规则转发到pod，默认使用iptables轮询规则实现负载均衡</li>
+</ul>
+<p>可以说，services的本质就是kube-proxy在各个node添加的一系列iptables规则。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>root@node1 ~<span class="o">]</span><span class="c1"># iptables -t nat -L|grep -i dnat</span>
+</span></span><span class="line"><span class="cl">DNAT       tcp  --  anywhere             anywhere             /* default/prometheus:prometheus */ tcp to:10.244.1.15:9090
+</span></span><span class="line"><span class="cl">DNAT       tcp  --  anywhere             anywhere             /* default/prometheus:prometheus */ tcp to:10.244.1.16:9090
+</span></span><span class="line"><span class="cl">DNAT       tcp  --  anywhere             anywhere             /* default/centos */ tcp to:10.244.2.34:80
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>一个完整的访问流程如下：</p>
+<ol>
+<li>podA访问service，先通过podA所在node上的iptables nat转化为service对应的podB的ip和port</li>
+<li>flanneld进程查找podB所在node的ip并通过UDP封装</li>
+<li>数据到达podB所在node的flanneld进程，还原为podA发送的数据</li>
+</ol>
+<p><img src="./image-20220606003216090.png" alt="image-20220606003216090"></p>
+<p>这里对比下CNI和kube-proxy：</p>
+<ul>
+<li>CNI创建overlay网络，为所有node和pod分配ip，对应<strong>pod ip</strong></li>
+<li>kube-proxy通过添加iptables把访问service的请求转发到对应pod，对应service的<strong>cluster ip</strong></li>
+</ul>
+<h2 id="coredns与服务发现">coreDNS与服务发现</h2>
+<p>从Kubernetes 1.12开始，CoreDNS就成了Kubernetes的默认DNS服务器。其基于caddy并采用模块化设计，具体功能需要不同插件实现。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="l">.:53 {</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">errors</span><span class="w"> </span><span class="c"># 启用错误记录</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">health</span><span class="w"> </span><span class="c"># 启用运行状况检查端点，8080/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">kubernetes cluster.local in-addr.arpa ip6.arpa {</span><span class="w"> </span><span class="c"># 处理k8s 域名解析</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">       </span><span class="l">pods insecure</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">       </span><span class="l">upstream</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">       </span><span class="l">fallthrough in-addr.arpa ip6.arpa </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">prometheus :9153</span><span class="w"> </span><span class="c"># 启用Prometheus指标。9153/metrics</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">forward . /etc/resolv.conf</span><span class="w"> </span><span class="c"># 通过resolv.conf内的nameservers解析</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">cache 30</span><span class="w"> </span><span class="c"># 启用缓存，所有内容限制为30秒的TTL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">loop</span><span class="w"> </span><span class="c"># 检测简单的转发循环并停止服务器</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">reload</span><span class="w"> </span><span class="c"># reload允许自动重新加载已更改的Corefile</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="l">loadbalance</span><span class="w"> </span><span class="c"># 负载均衡，默认round_robin，</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>}<span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ol>
+<li>
+<p>每个{} 代表一个zone,格式是 “Zone:port{}”, 其中&quot;.&ldquo;代表默认zone,</p>
+</li>
+<li>
+<p>{}内的每个名称代表插件的名称,只有配置的插件才会启用
+当解析域名时，会先匹配zone（都未匹配会执行默认zone），然后zone内的插件从上到下依次执行(这个顺序并不是配置文件内谁在前面的顺序，而是<a href="https://link.juejin.cn/?target=https%3A%2F%2Fgithub.com%2Fcoredns%2Fcoredns%2Fblob%2Fmaster%2Fcore%2Fdnsserver%2Fzdirectives.go%23L12">core/dnsserver/zdirectives.go</a>内的顺序)，匹配后返回处理（执行过的插件从下到上依次处理返回逻辑），不再执行下一个插件</p>
+</li>
+<li>
+<p>插件的文档说明请参考: <a href="https://link.juejin.cn/?target=https%3A%2F%2Fcoredns.io%2Fplugins">coredns.io/plugins</a></p>
+</li>
+</ol>
+<p>kubernetes会为pod和service创建DNS记录，可使用资源名称直接访问。</p>
+<ul>
+<li>service：<code>servicename.namespace.svc.clusterDomain</code></li>
+<li>pod：<code>podIp.namespace.pod.clusterDomain</code> (podIp需要用<code>-</code>代替<code>.</code>)</li>
+</ul>
+<h1 id="参考">参考</h1>
+<p><a href="https://kubernetes.io/zh/docs/tasks/administer-cluster/dns-debugging-resolution/">官网</a></p>
+<p><a href="https://www.zhaohuabing.com/post/2020-02-24-linux-taptun/">Linux Tun/Tap 介绍</a></p>
+<p><a href="https://fanlv.wiki/2020/08/25/note/happy-talk-net/">趣谈网络协议</a></p>
+<p><a href="https://juejin.cn/post/6844903854799061006">CoreDns 介绍和源码解析</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2022-06-07
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/k8s/">k8s</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/pod%E8%B0%83%E5%BA%A6/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">k8s pod调度配置</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/">
+            <span class="next-text nav-default">shell login和no-login的区别</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Struct on kikyo</title>
+    <link>/tags/struct/</link>
+    <description>Recent content in Struct on kikyo</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 05 Jan 2022 23:37:14 +0800</lastBuildDate>
+    <atom:link href="/tags/struct/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>[Demo] Go语言Marshal技巧</title>
+      <link>/post/demo_golang_marshal/</link>
+      <pubDate>Wed, 05 Jan 2022 23:37:14 +0800</pubDate>
+      <guid>/post/demo_golang_marshal/</guid>
+      <description>嵌套struct 避免使用map[string]interface{} interface{}如果为map，则无法index 由于是interfa</description>
+    </item>
+  </channel>
+</rss>
