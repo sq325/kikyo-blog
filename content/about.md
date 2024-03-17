@@ -25,9 +25,10 @@ toc: false
 
 工作相关：
 
-- Prometheus
-- Golang
-- React
+- k8s和容器相关监控开发与实践
+- DevOps相关技术与实践
+- 可观测技术探索与落地
+- 运维工具开发
 
 基础知识：
 
