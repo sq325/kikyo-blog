@@ -2,18 +2,25 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>使用Demo on kikyo</title>
-    <link>https://github.com/sq325/kikyo-blog/categories/%E4%BD%BF%E7%94%A8demo/</link>
+    <link>/categories/%E4%BD%BF%E7%94%A8demo/</link>
     <description>Recent content in 使用Demo on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Wed, 05 Jan 2022 23:37:14 +0800</lastBuildDate>
-    <atom:link href="https://github.com/sq325/kikyo-blog/categories/%E4%BD%BF%E7%94%A8demo/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 19 May 2022 20:13:27 +0800</lastBuildDate>
+    <atom:link href="/categories/%E4%BD%BF%E7%94%A8demo/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>[Demo] Go语言Marshal技巧</title>
-      <link>https://github.com/sq325/kikyo-blog/post/demo_golang_marshal/</link>
-      <pubDate>Wed, 05 Jan 2022 23:37:14 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/demo_golang_marshal/</guid>
-      <description>嵌套struct 避免使用map[string]interface{} interface{}如果为map，则无法index 由于是interfa</description>
+      <title>Golang 流处理</title>
+      <link>/post/golang_buffer%E4%BD%BF%E7%94%A8/</link>
+      <pubDate>Sun, 09 Jan 2022 16:33:42 +0800</pubDate>
+      <guid>/post/golang_buffer%E4%BD%BF%E7%94%A8/</guid>
+      <description>Go中常用的三种流处理数据结构 bufio bytes.Buffer strings.Builder和strings.Reader 其中strings.Builder主要用来拼接</description>
+    </item>
+    <item>
+      <title>[Demo] Golang logrus范例</title>
+      <link>/post/demo_golang_logrus/</link>
+      <pubDate>Wed, 05 Jan 2022 19:15:41 +0800</pubDate>
+      <guid>/post/demo_golang_logrus/</guid>
+      <description>日切日志 linux操作系统有最大文件限制，需要定期分割日志文件 rotatelogs 思路 rotatelogs周期性产生日志文件 New函数始终return当前日志</description>
     </item>
   </channel>
 </rss>

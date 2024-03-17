@@ -2,7 +2,7 @@
 title: "[Demo] Golang logrus范例"
 date: 2022-01-05T19:15:41+08:00
 lastmod: 2022-01-05T19:15:41+08:00
-draft: true
+draft: false
 keywords: []
 description: ""
 tags: ["golang", 'logrus']
@@ -42,8 +42,6 @@ sequenceDiagrams:
 
 <!--more-->
 
-
-
 # 日切日志
 
 > linux操作系统有最大文件限制，需要定期分割日志文件
@@ -64,47 +62,39 @@ import rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 func New(p string, options ...Option) (*RotateLogs, error) //RotateLogs是一个Writer
 
 type Option interface {
-	Name() string
-	Value() interface{}
+ Name() string
+ Value() interface{}
 }
 func WithLinkName(s string) Option // 生成软链，指向最新日志文件
 func WithMaxAge(d time.Duration) Option
 func WithRotationTime(d time.Duration) Option
 ```
 
-
-
 ### Demo
 
 ```go
 import (
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+ rotatelogs "github.com/lestrrat-go/file-rotatelogs"
   "github.com/sirupsen/logrus"
 )
 func init() {
   logName := "./logs/prometheus.log"
-	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: "2006-01-02 15:04:05"})
-	logrus.SetLevel(logrus.InfoLevel)
-	writer, err := rotatelogs.New(
-		logName+".%Y_%m_%d",
-		rotatelogs.WithLinkName(logName),
-		rotatelogs.WithMaxAge(time.Duration(24*30)*time.Hour), // 保存30天
-		rotatelogs.WithRotationTime(time.Duration(24)*time.Hour),  // 日切
-	)
+ logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: "2006-01-02 15:04:05"})
+ logrus.SetLevel(logrus.InfoLevel)
+ writer, err := rotatelogs.New(
+  logName+".%Y_%m_%d",
+  rotatelogs.WithLinkName(logName),
+  rotatelogs.WithMaxAge(time.Duration(24*30)*time.Hour), // 保存30天
+  rotatelogs.WithRotationTime(time.Duration(24)*time.Hour),  // 日切
+ )
 
-	if err != nil {
-		logrus.Fatalf("init log error: %w", err)
-	}
-	logrus.SetOutput(writer)
+ if err != nil {
+  logrus.Fatalf("init log error: %w", err)
+ }
+ logrus.SetOutput(writer)
 }
 
 ```
-
-
-
-
-
-
 
 ## lumberjack
 
@@ -133,33 +123,29 @@ type Logger struct {
 package main
 
 import (
-	"github.com/rifflock/lfshook"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
+ "github.com/rifflock/lfshook"
+ "github.com/sirupsen/logrus"
+ "gopkg.in/natefinch/lumberjack.v2"
 )
 func main(){
-	errLogger := &lumberjack.Logger{
-		Filename: "err.txt", //日志文件路径
-		MaxSize: 5, //每个日志文件保存的最大尺寸，单位：M
-		MaxBackups: 7, //日志文件最多保存多少个备份
-		MaxAge: 7, //日志文件最多保存多少天
-		Compress: true, //是否压缩
-	}
-	//logrus.AddHook(h)
+ errLogger := &lumberjack.Logger{
+  Filename: "err.txt", //日志文件路径
+  MaxSize: 5, //每个日志文件保存的最大尺寸，单位：M
+  MaxBackups: 7, //日志文件最多保存多少个备份
+  MaxAge: 7, //日志文件最多保存多少天
+  Compress: true, //是否压缩
+ }
+ //logrus.AddHook(h)
 
-	lfHook := lfshook.NewHook(lfshook.WriterMap{
-		logrus.ErrorLevel: errLogger,
-		logrus.FatalLevel: errLogger,
-	},nil)
-	logrus.AddHook(lfHook)
-	for  {
-		logrus.Error("error msg")
-	}
+ lfHook := lfshook.NewHook(lfshook.WriterMap{
+  logrus.ErrorLevel: errLogger,
+  logrus.FatalLevel: errLogger,
+ },nil)
+ logrus.AddHook(lfHook)
+ for  {
+  logrus.Error("error msg")
+ }
 ```
-
-
-
-
 
 # 定制
 
@@ -177,8 +163,6 @@ logrus.SetFormatter(&log.TextFormatter{
     // DisableLevelTruncation:true,
 })
 ```
-
-
 
 ## 第三方格式
 
@@ -202,8 +186,6 @@ func main() {
 // Feb  8 15:22:59.077 [INFO] info msg
 ```
 
-
-
 # 输出到多个Writer
 
 ## Doc
@@ -212,26 +194,22 @@ func main() {
 import "github.com/sirupsen/logrus"
 
 type Logger struct {
-	Out io.Writer
-	Hooks LevelHooks
-	Formatter Formatter
-	ReportCaller bool
-	Level Level
-	ExitFunc exitFunc
+ Out io.Writer
+ Hooks LevelHooks
+ Formatter Formatter
+ ReportCaller bool
+ Level Level
+ ExitFunc exitFunc
 }
 type Entry struct {
-	Logger *Logger
-	Data Fields
-	Time time.Time
-	Level Level
-	Message string
-	...
+ Logger *Logger
+ Data Fields
+ Time time.Time
+ Level Level
+ Message string
+ ...
 }
 ```
-
-
-
-
 
 ## Demo
 
@@ -239,55 +217,53 @@ type Entry struct {
 package main
 
 import (
-	"github.com/lestrrat-go/file-rotatelogs"
-	"github.com/pkg/errors"
-	"github.com/rifflock/lfshook"
-	log "github.com/sirupsen/logrus"
-	"path"
-	"time"
+ "github.com/lestrrat-go/file-rotatelogs"
+ "github.com/pkg/errors"
+ "github.com/rifflock/lfshook"
+ log "github.com/sirupsen/logrus"
+ "path"
+ "time"
 )
 
 func ConfigLocalFilesystemLogger(logPath string, logFileName string, maxAge time.Duration, rotationTime time.Duration) {
-	baseLogPath := path.Join(logPath, logFileName)
-	writer, err := rotatelogs.New(
-		baseLogPath+"-%Y%m%d%H%M.log",
-		rotatelogs.WithLinkName(baseLogPath), 
-		rotatelogs.WithMaxAge(maxAge),             // 文件最大保存时间
-		rotatelogs.WithRotationTime(rotationTime), // 日志切割时间间隔
-	)
-	if err != nil {
-		log.Errorf("config local file system logger error. %+v", errors.WithStack(err))
-	}
+ baseLogPath := path.Join(logPath, logFileName)
+ writer, err := rotatelogs.New(
+  baseLogPath+"-%Y%m%d%H%M.log",
+  rotatelogs.WithLinkName(baseLogPath), 
+  rotatelogs.WithMaxAge(maxAge),             // 文件最大保存时间
+  rotatelogs.WithRotationTime(rotationTime), // 日志切割时间间隔
+ )
+ if err != nil {
+  log.Errorf("config local file system logger error. %+v", errors.WithStack(err))
+ }
   writer1, _ = os.OpenFile("err.log", os.O_RDWR|os.O_CREATE, 0755)
   
-	lfHook := lfshook.NewHook(lfshook.WriterMap{
-		log.DebugLevel: writer, // 为不同级别设置不同的输出目的
-		log.InfoLevel:  os.Stderr,
-		log.WarnLevel:  os.Stdout,
-		log.ErrorLevel: writer1,
-		log.FatalLevel: writer,
-		log.PanicLevel: writer,
-	}, &log.TextFormatter{DisableColors: true})
-	log.SetReportCaller(true) //将函数名和行数放在日志里面
-	log.AddHook(lfHook)
+ lfHook := lfshook.NewHook(lfshook.WriterMap{
+  log.DebugLevel: writer, // 为不同级别设置不同的输出目的
+  log.InfoLevel:  os.Stderr,
+  log.WarnLevel:  os.Stdout,
+  log.ErrorLevel: writer1,
+  log.FatalLevel: writer,
+  log.PanicLevel: writer,
+ }, &log.TextFormatter{DisableColors: true})
+ log.SetReportCaller(true) //将函数名和行数放在日志里面
+ log.AddHook(lfHook)
 }
 
 func main() {
-	//ConfigLocalFilesystemLogger1("log")
-	ConfigLocalFilesystemLogger("D:/benben", "sentalog", time.Second*60*3, time.Second*60)
-	for {
+ //ConfigLocalFilesystemLogger1("log")
+ ConfigLocalFilesystemLogger("D:/benben", "sentalog", time.Second*60*3, time.Second*60)
+ for {
         log.Debug("调试信息")
         log.Info("提示信息")
         log.Warn("警告信息")
         log.Error("错误信息")
-		time.Sleep(500 * time.Millisecond)
-	}
+  time.Sleep(500 * time.Millisecond)
+ }
 }
 
 
 ```
-
-
 
 ```go
 mw := io.MultiWriter(os.Stdout, logFile)
@@ -300,8 +276,6 @@ requestLogger.Info("something happened on that request") # will log request_id a
 requestLogger.Warn("something not great happened")
 ```
 
-
-
 # 使用logger对象
 
 > 适合习惯面向对象编程的人使用
@@ -310,8 +284,8 @@ requestLogger.Warn("something not great happened")
 package main
 
 import (
-	"github.com/sirupsen/logrus"
-	"os"
+ "github.com/sirupsen/logrus"
+ "os"
 )
 
 // logrus提供了New()函数来创建一个logrus的实例。
@@ -319,12 +293,12 @@ import (
 var log = logrus.New()
 
 func main() {
-	log.Out = os.Stdout
+ log.Out = os.Stdout
   log.Formatter = &logrus.JSONFormatter{}
-	log.WithFields(logrus.Fields{
-		"animal": "walrus",
-		"size":   10,
-	}).Info("A group of walrus emerges from the ocean")
+ log.WithFields(logrus.Fields{
+  "animal": "walrus",
+  "size":   10,
+ }).Info("A group of walrus emerges from the ocean")
 }
 
 
@@ -363,8 +337,6 @@ func SetLevel(level Level) {
 
 ```
 
-
-
 # hook
 
 - 不同目的地的分发
@@ -375,8 +347,8 @@ func SetLevel(level Level) {
 // 按照Fire方法定义的内容修改logrus.Entry。
 // 写入日志时拦截，修改logrus.Entry
 type Hook interface {
-	Levels() []Level
-	Fire(*Entry) error
+ Levels() []Level
+ Fire(*Entry) error
 }
 
 type DefaultFieldHook struct {
@@ -394,12 +366,6 @@ logger.AddHook(DefaultFieldHook)
 
 ```
 
-
-
-
-
-
-
 # gin
 
 ```go
@@ -408,41 +374,37 @@ logger.AddHook(DefaultFieldHook)
 var log = logrus.New()
 
 func init() {
-	// Log as JSON instead of the default ASCII formatter.
-	log.Formatter = &logrus.JSONFormatter{}
-	// Output to stdout instead of the default stderr
-	// Can be any io.Writer, see below for File example
-	f, _ := os.Create("./gin.log")
-	log.Out = f
-	gin.SetMode(gin.ReleaseMode)
-	gin.DefaultWriter = log.Out
-	// Only log the warning severity or above.
-	log.Level = logrus.InfoLevel
+ // Log as JSON instead of the default ASCII formatter.
+ log.Formatter = &logrus.JSONFormatter{}
+ // Output to stdout instead of the default stderr
+ // Can be any io.Writer, see below for File example
+ f, _ := os.Create("./gin.log")
+ log.Out = f
+ gin.SetMode(gin.ReleaseMode)
+ gin.DefaultWriter = log.Out
+ // Only log the warning severity or above.
+ log.Level = logrus.InfoLevel
 }
 
 func main() {
-	// 创建一个默认的路由引擎
-	r := gin.Default()
-	// GET：请求方式；/hello：请求的路径
-	// 当客户端以GET方法请求/hello路径时，会执行后面的匿名函数
-	r.GET("/hello", func(c *gin.Context) {
-		log.WithFields(logrus.Fields{
-			"animal": "walrus",
-			"size":   10,
-		}).Warn("A group of walrus emerges from the ocean")
-		// c.JSON：返回JSON格式的数据
-		c.JSON(200, gin.H{
-			"message": "Hello world!",
-		})
-	})
-	// 启动HTTP服务，默认在0.0.0.0:8080启动服务
-	r.Run()
+ // 创建一个默认的路由引擎
+ r := gin.Default()
+ // GET：请求方式；/hello：请求的路径
+ // 当客户端以GET方法请求/hello路径时，会执行后面的匿名函数
+ r.GET("/hello", func(c *gin.Context) {
+  log.WithFields(logrus.Fields{
+   "animal": "walrus",
+   "size":   10,
+  }).Warn("A group of walrus emerges from the ocean")
+  // c.JSON：返回JSON格式的数据
+  c.JSON(200, gin.H{
+   "message": "Hello world!",
+  })
+ })
+ // 启动HTTP服务，默认在0.0.0.0:8080启动服务
+ r.Run()
 }
 ```
-
-
-
-
 
 # 参考
 

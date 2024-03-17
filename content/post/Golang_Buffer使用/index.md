@@ -2,7 +2,7 @@
 title: "Golang 流处理"
 date: 2022-01-09T16:33:42+08:00
 lastmod: 2022-01-22T16:33:42+08:00
-draft: true
+draft: false
 keywords: []
 description: ""
 tags: ["golang"]
@@ -42,15 +42,11 @@ sequenceDiagrams:
 
 <!--more-->
 
-
-
 Go中常用的三种流处理数据结构
 
 - bufio
 - bytes.Buffer
 - strings.Builder和strings.Reader
-
-
 
 其中strings.Builder主要用来拼接字符串，bytes.Buffer和bufio用来减少磁盘io操作的次数，提高io性能。
 
@@ -63,19 +59,17 @@ Go中常用的三种流处理数据结构
 ```go
 func runCmd(cmd *exec.Cmd) (*bufio.Scanner, bool) {
 
-	stdout, _ := cmd.StdoutPipe()
-	if err := cmd.Start(); err != nil { // 开始执行cmd
-		fmt.Println(err)
-	}
-	var buf1, buf2 bytes.Buffer 
-	buf := io.MultiWriter(&buf1, &buf2) // 使用指针
-	io.Copy(buf, stdout) // stdout读完即被清空
-	content, _ := io.ReadAll(&buf2) // buf2读完被清空
-	return bufio.NewScanner(&buf1), string(content) != ""
+ stdout, _ := cmd.StdoutPipe()
+ if err := cmd.Start(); err != nil { // 开始执行cmd
+  fmt.Println(err)
+ }
+ var buf1, buf2 bytes.Buffer 
+ buf := io.MultiWriter(&buf1, &buf2) // 使用指针
+ io.Copy(buf, stdout) // stdout读完即被清空
+ content, _ := io.ReadAll(&buf2) // buf2读完被清空
+ return bufio.NewScanner(&buf1), string(content) != ""
 }
 ```
-
-
 
 要使用指针，即*bytes.Buffer，而不是byte.Buffer本身
 
@@ -98,35 +92,25 @@ func (b *Buffer) WriteTo(w io.Writer) (n int64, err error) // 从b中读取数�
 
 ```
 
-
-
 Write
 
 ```go
 func (b *Buffer) ReadFrom(r io.Reader) (n int64, err error) // 从r读取数据到b
 ```
 
-
-
-
-
-
-
-
-
 ```go
 // 声明
-var b bytes.Buffer       				//直接定义一个Buffer变量，不用初始化，可以直接使用
-b := new(bytes.Buffer)   				//使用New返回Buffer变量
-b := bytes.NewBuffer(s []byte)   		//从一个[]byte切片，构造一个Buffer
-b := bytes.NewBufferString(s string)	//从一个string变量，构造一个Buffer
+var b bytes.Buffer           //直接定义一个Buffer变量，不用初始化，可以直接使用
+b := new(bytes.Buffer)       //使用New返回Buffer变量
+b := bytes.NewBuffer(s []byte)     //从一个[]byte切片，构造一个Buffer
+b := bytes.NewBufferString(s string) //从一个string变量，构造一个Buffer
 
 // 写入数据
-b.Write(d []byte) (n int, err error)   			//将切片d写入Buffer尾部
-b.WriteString(s string) (n int, err error) 		//将字符串s写入Buffer尾部
-b.WriteByte(c byte) error  						//将字符c写入Buffer尾部
-b.WriteRune(r rune) (n int, err error)    		//将一个rune类型的数据放到缓冲区的尾部
-b.ReadFrom(r io.Reader) (n int64, err error)	//从实现了io.Reader接口的可读取对象写入Buffer尾部
+b.Write(d []byte) (n int, err error)      //将切片d写入Buffer尾部
+b.WriteString(s string) (n int, err error)   //将字符串s写入Buffer尾部
+b.WriteByte(c byte) error        //将字符c写入Buffer尾部
+b.WriteRune(r rune) (n int, err error)      //将一个rune类型的数据放到缓冲区的尾部
+b.ReadFrom(r io.Reader) (n int64, err error) //从实现了io.Reader接口的可读取对象写入Buffer尾部
 
 
 // 读取
@@ -156,9 +140,9 @@ b.WriteTo(w io.Writer) (n int64, err error)
 package main
 
 import (
-	"os"
-	"fmt"
-	"bytes"
+ "os"
+ "fmt"
+ "bytes"
 )
 
 func main() {
@@ -169,57 +153,47 @@ func main() {
 }
 ```
 
-
-
-
-
 ```go
 type Buff struct {
-	Buffer *bytes.Buffer
-	Writer *bufio.Writer
+ Buffer *bytes.Buffer
+ Writer *bufio.Writer
 }
 
 // 初始化
 func NewBuff() *Buff {
-	b := bytes.NewBuffer([]byte{})
-	return &Buff{
-		Buffer: b,
-		Writer: bufio.NewWriter(b),
-	}
+ b := bytes.NewBuffer([]byte{})
+ return &Buff{
+  Buffer: b,
+  Writer: bufio.NewWriter(b),
+ }
 }
 
 func (b *Buff) WriteString(str string) error {
-	_, err := b.Writer.WriteString(str)
-	return err
+ _, err := b.Writer.WriteString(str)
+ return err
 }
 
 func (b *Buff) SaveAS(name string) error {
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+ file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+ if err != nil {
+  return err
+ }
+ defer file.Close()
 
-	if err := b.Writer.Flush(); err != nil {
-		return nil
-	}
+ if err := b.Writer.Flush(); err != nil {
+  return nil
+ }
 
-	_, err = b.Buffer.WriteTo(file)
-	return err
+ _, err = b.Buffer.WriteTo(file)
+ return err
 }
 
 func main() {
-	var b = NewBuff()
+ var b = NewBuff()
 
-	b.WriteString("haah")
+ b.WriteString("haah")
 }
 ```
-
-
-
-
-
-
 
 # bufio
 
@@ -233,19 +207,15 @@ func NewWriter(w io.Writer) *Writer
 func NewWriterSize(w io.Writer, size int) *Writer
 
 type ReadWriter struct {
-	*Reader
-	*Writer
+ *Reader
+ *Writer
 }
 func NewReadWriter(r *Reader, w *Writer) *ReadWriter
 
 
 ```
 
-
-
 bufio包提供了有缓冲的io，它定义了两个结构体，分别是Reader和Writer, 它们也分别实现了io包中io.Reader和io.Writer接口, 通过传入一个io.Reader的实现对象和一个缓冲池大小参数，可以构造一个bufio.Reader对象，根据bufio.Reader的相关方法便可读取io.Reader中数据流，因为带有缓冲池，读数据会先读到缓冲池，再次读取会先去缓冲池读取，这样减少了io操作，提高了效率；
-
-
 
 `func (b *Reader) Read(p []byte) (n int, err error)` 具体读取流程如下：
 
@@ -254,13 +224,11 @@ bufio包提供了有缓冲的io，它定义了两个结构体，分别是Reader�
 - 当缓存区没有内容的时候且len(p)<len(buf),即要读取的内容比缓存区小，缓存区从文件读取内容充满缓存区，并将p填满（此时缓存区有剩余内容）
 - 以后再次读取时缓存区有内容，将缓存区内容全部填入p并清空缓存区；
 
-`func (b *Writer) Write(p []byte) (nn int, err error) `具体写入流程如下：
+`func (b *Writer) Write(p []byte) (nn int, err error)`具体写入流程如下：
 
 - 判断buf中可用容量是否可以放下 p；如果能放下，直接把p拼接到buf后面，即把内容放到缓冲区
 - 如果缓冲区的可用容量不足以放下，且此时缓冲区是空的，直接把p写入文件即可
 - 如果缓冲区的可用容量不足以放下，且此时缓冲区有内容，则用p把缓冲区填满，把缓冲区所有内容写入文件，并清空缓冲区；
-
-
 
 # strings.builder
 
@@ -283,8 +251,6 @@ func (b *Builder) WriteString(s string) (int, error) { // s写入Builder
 func (b *Builder) String() string // Builder拼接成string
 func (b *Builder) Write(p []byte) (int, error) // p中数据写入Builder
 ```
-
-
 
 拼接字符串
 
@@ -313,10 +279,6 @@ buf.WriteString("after ")
 buf.String() // pre after
 ```
 
-
-
-
-
 # Reader
 
 > 流数据，文件、[]byte、string和bytes.Buffer常被转化为Reader。
@@ -330,25 +292,8 @@ string             ->          io.Reader
 bytes.Buffer
 ```
 
-
-
 ```go
 io.ReadAll(reader io.Reader)
 io.Copy(dst io.Writer, reader io.Reader)
 // 读取后Reader即没有内容，不能读取两次
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

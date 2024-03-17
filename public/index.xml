@@ -2,129 +2,136 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>kikyo</title>
-    <link>https://github.com/sq325/kikyo-blog/</link>
+    <link>/</link>
     <description>Recent content on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 05 Jul 2022 16:49:25 +0800</lastBuildDate>
-    <atom:link href="https://github.com/sq325/kikyo-blog/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 17 Mar 2024 00:52:32 +0800</lastBuildDate>
+    <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>k8s认证原理</title>
-      <link>https://github.com/sq325/kikyo-blog/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/</link>
+      <link>/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/</link>
       <pubDate>Mon, 04 Jul 2022 16:49:25 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/</guid>
+      <guid>/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/</guid>
       <description>k8s属于微服务架构，对资源的所有访问和变更都是通过API Server的REST API实现。所有访问API Server的请求都必须通过认证（</description>
     </item>
     <item>
       <title>k8s存储</title>
-      <link>https://github.com/sq325/kikyo-blog/post/k8s%E5%AD%98%E5%82%A8/</link>
+      <link>/post/k8s%E5%AD%98%E5%82%A8/</link>
       <pubDate>Sat, 25 Jun 2022 15:55:51 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/k8s%E5%AD%98%E5%82%A8/</guid>
+      <guid>/post/k8s%E5%AD%98%E5%82%A8/</guid>
       <description>k8s存储概念 volume volume是k8s对存储资源的抽象，一个逻辑存储对象。我们在pod的定义中，container代表计算资源，volume代</description>
     </item>
     <item>
       <title>k8s控制器</title>
-      <link>https://github.com/sq325/kikyo-blog/post/k8s%E6%8E%A7%E5%88%B6%E5%99%A8/</link>
+      <link>/post/k8s%E6%8E%A7%E5%88%B6%E5%99%A8/</link>
       <pubDate>Tue, 21 Jun 2022 16:46:50 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/k8s%E6%8E%A7%E5%88%B6%E5%99%A8/</guid>
+      <guid>/post/k8s%E6%8E%A7%E5%88%B6%E5%99%A8/</guid>
       <description>k8s通过控制器模式实现对容器的编排，管理容器的状态和容器间的关系。 控制器定义包括控制器本身的定义和被控制对象的定义两部分组成，如下图： 下面</description>
     </item>
     <item>
       <title>k8s pod调度配置</title>
-      <link>https://github.com/sq325/kikyo-blog/post/pod%E8%B0%83%E5%BA%A6/</link>
+      <link>/post/pod%E8%B0%83%E5%BA%A6/</link>
       <pubDate>Tue, 14 Jun 2022 20:48:18 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/pod%E8%B0%83%E5%BA%A6/</guid>
+      <guid>/post/pod%E8%B0%83%E5%BA%A6/</guid>
       <description>本文介绍k8s pod 调度的基本原理，详细介绍具体pod调度相关的配置。 kube-scheduler kube-scheduler作为k8s负责任务调度的组件，以pod的形式</description>
     </item>
     <item>
       <title>k8s网络构建</title>
-      <link>https://github.com/sq325/kikyo-blog/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</link>
+      <link>/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</link>
       <pubDate>Tue, 07 Jun 2022 20:21:57 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</guid>
+      <guid>/post/k8s%E7%BD%91%E7%BB%9C%E5%8E%9F%E7%90%86/</guid>
       <description>k8s网络组件 pod作为k8s的一等公民，拥有自己的网络标识，其中CNI插件专门用于为pod创建大二层网络，每个pod都有CNI分配的其独一</description>
     </item>
     <item>
       <title>shell login和no-login的区别</title>
-      <link>https://github.com/sq325/kikyo-blog/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</link>
+      <link>/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</link>
       <pubDate>Wed, 12 Jan 2022 23:14:38 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</guid>
+      <guid>/post/shell%E7%99%BB%E9%99%86%E6%A8%A1%E5%BC%8F%E5%92%8C%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%9A%84%E5%85%B3%E7%B3%BB/</guid>
       <description>&lt;p&gt;shell的登陆方式决定其环境变量的加载，其中interactive shell和non-interactive shell之间的区别很好理解，本文重点介绍bash下的login和no-login。&lt;/p&gt;</description>
     </item>
     <item>
       <title>Golang执行linux命令</title>
-      <link>https://github.com/sq325/kikyo-blog/post/demo_golang_exec/</link>
+      <link>/post/demo_golang_exec/</link>
       <pubDate>Tue, 11 Jan 2022 00:02:45 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/demo_golang_exec/</guid>
+      <guid>/post/demo_golang_exec/</guid>
       <description>Doc 1 2 3 4 5 6 7 8 9 10 11 12 13 14 type Cmd struct { Path string Args []string Env []string Dir string Stdin io.Reader Stdout io.Writer Stderr io.Writer ExtraFiles []*os.File SysProcAttr *syscall.SysProcAttr Process *os.Process ProcessState *os.ProcessState } 一般用法 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24</description>
     </item>
     <item>
-      <title>[Demo] Go语言Marshal技巧</title>
-      <link>https://github.com/sq325/kikyo-blog/post/demo_golang_marshal/</link>
-      <pubDate>Wed, 05 Jan 2022 23:37:14 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/demo_golang_marshal/</guid>
-      <description>嵌套struct 避免使用map[string]interface{} interface{}如果为map，则无法index 由于是interfa</description>
+      <title>Golang 流处理</title>
+      <link>/post/golang_buffer%E4%BD%BF%E7%94%A8/</link>
+      <pubDate>Sun, 09 Jan 2022 16:33:42 +0800</pubDate>
+      <guid>/post/golang_buffer%E4%BD%BF%E7%94%A8/</guid>
+      <description>Go中常用的三种流处理数据结构 bufio bytes.Buffer strings.Builder和strings.Reader 其中strings.Builder主要用来拼接</description>
+    </item>
+    <item>
+      <title>[Demo] Golang logrus范例</title>
+      <link>/post/demo_golang_logrus/</link>
+      <pubDate>Wed, 05 Jan 2022 19:15:41 +0800</pubDate>
+      <guid>/post/demo_golang_logrus/</guid>
+      <description>日切日志 linux操作系统有最大文件限制，需要定期分割日志文件 rotatelogs 思路 rotatelogs周期性产生日志文件 New函数始终return当前日志</description>
     </item>
     <item>
       <title>Nginx-从url到静态资源</title>
-      <link>https://github.com/sq325/kikyo-blog/post/nginx-%E4%BB%8Eurl%E5%88%B0%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90/</link>
+      <link>/post/nginx-%E4%BB%8Eurl%E5%88%B0%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90/</link>
       <pubDate>Thu, 07 Oct 2021 17:31:42 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/nginx-%E4%BB%8Eurl%E5%88%B0%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90/</guid>
+      <guid>/post/nginx-%E4%BB%8Eurl%E5%88%B0%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90/</guid>
       <description>&lt;p&gt;介绍Nginx处理HTTP请求的流程&lt;/p&gt;</description>
     </item>
     <item>
       <title>TCP-常见问题汇总</title>
-      <link>https://github.com/sq325/kikyo-blog/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</link>
+      <link>/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</link>
       <pubDate>Mon, 20 Sep 2021 22:17:00 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</guid>
+      <guid>/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</guid>
       <description>&lt;p&gt;使用场景：总结互联网应用会遇到的各种TCP/IP协议、网络报文等问题。&lt;/p&gt;</description>
     </item>
     <item>
       <title>ss-查看linux套接字</title>
-      <link>https://github.com/sq325/kikyo-blog/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</link>
+      <link>/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</link>
       <pubDate>Mon, 20 Sep 2021 22:10:51 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</guid>
+      <guid>/post/ss-%E6%9F%A5%E7%9C%8Blinux%E5%A5%97%E6%8E%A5%E5%AD%97/</guid>
       <description>&lt;p&gt;使用场景：在linux环境替代netstat查看socket情况。&lt;/p&gt;</description>
     </item>
     <item>
       <title>使用tcpdump抓包</title>
-      <link>https://github.com/sq325/kikyo-blog/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</link>
+      <link>/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</link>
       <pubDate>Mon, 20 Sep 2021 22:09:52 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</guid>
+      <guid>/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</guid>
       <description>&lt;p&gt;使用场景：可以在主机获取各协议的报文，分析通讯问题的利器。&lt;/p&gt;</description>
     </item>
     <item>
       <title>linux-网络工具汇总</title>
-      <link>https://github.com/sq325/kikyo-blog/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</link>
+      <link>/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</link>
       <pubDate>Sat, 18 Sep 2021 22:56:16 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</guid>
+      <guid>/post/linux-%E7%BD%91%E7%BB%9C%E5%B7%A5%E5%85%B7%E6%B1%87%E6%80%BB/</guid>
       <description>&lt;p&gt;使用场景：汇总常用的linux网络命令，分门别类的介绍各个命令的使用场景，供需要时查阅。&lt;/p&gt;</description>
     </item>
     <item>
       <title>hugo-处理图片的方式</title>
-      <link>https://github.com/sq325/kikyo-blog/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/</link>
+      <link>/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/</link>
       <pubDate>Mon, 13 Sep 2021 18:24:31 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/</guid>
+      <guid>/post/hugo%E5%A4%84%E7%90%86%E5%9B%BE%E7%89%87%E7%9A%84%E6%96%B9%E5%BC%8F/</guid>
       <description>&lt;p&gt;这里介绍两种在文章中插入图片的方式，各有利弊，可以根据情况选择。&lt;/p&gt;</description>
     </item>
     <item>
       <title>hugo-模板和内容对应关系</title>
-      <link>https://github.com/sq325/kikyo-blog/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/</link>
+      <link>/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/</link>
       <pubDate>Thu, 09 Sep 2021 15:11:51 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/</guid>
+      <guid>/post/hugo%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%A8%A1%E6%9D%BF%E8%BF%9B%E8%A1%8C%E6%B8%B2%E6%9F%93/</guid>
       <description>&lt;p&gt;对于刚接触hugo的人，阅读本文将了解hugo组织内容的方式，掌握CONTENT、URL、TEMPALTE三者的关系，从结构上理解hugo。本文只介绍内容模板，baseof模板规律也大同小异。&lt;/p&gt;</description>
     </item>
     <item>
       <title>2021年书摘</title>
-      <link>https://github.com/sq325/kikyo-blog/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/</link>
+      <link>/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/</link>
       <pubDate>Wed, 08 Sep 2021 18:00:14 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/</guid>
+      <guid>/post/2021%E5%B9%B4%E4%B9%A6%E6%91%98/</guid>
       <description>读库2013 第一次知道“读库”是在财新采访张立宪节目中，我对读库的印象是小众图书，看读库的人应该是一帮在这个繁杂的世界寻找一丝宁静、真实的一</description>
     </item>
     <item>
       <title>About The Blog</title>
-      <link>https://github.com/sq325/kikyo-blog/about/</link>
+      <link>/about/</link>
       <pubDate>Tue, 07 Sep 2021 17:43:52 +0800</pubDate>
-      <guid>https://github.com/sq325/kikyo-blog/about/</guid>
+      <guid>/about/</guid>
       <description>欢迎来到我的Blog！ 诞生 这是一个以技术内容为主，零散书摘作为配料的Blog。 本人技术方向： DevOps 容器 这两个领域在近几年不断有新技术涌现，很幸运</description>
     </item>
   </channel>
