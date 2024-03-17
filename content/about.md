@@ -15,7 +15,8 @@ toc: false
 本人技术方向：
 
 - DevOps
-- 容器
+- 云原生可观测
+- Prometheus相关生态
 
 这两个领域在近几年不断有新技术涌现，很幸运身在一个需要不断提升自我的时代。
 
@@ -25,11 +26,9 @@ toc: false
 
 工作相关：
 
-- linux
-- prometheus
-- zabbix
-- docker
-- kubernetes
+- Prometheus
+- Golang
+- React
 
 基础知识：
 
@@ -41,6 +40,7 @@ toc: false
 
 - Python
 - Golang
+- Shell
 - JavaScript
 
 # About Me

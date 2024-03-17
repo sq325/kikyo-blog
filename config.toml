@@ -1,5 +1,4 @@
 baseURL = ""
-basePath = "/kikyo-blog/"
 languageCode = "zh-cn"
 defaultContentLanguage = "zh-cn" # en / zh-cn / ... (This field determines which i18n file to use)
 title = "kikyo"                  # 站点标题
@@ -20,6 +19,9 @@ paginate = 10         # 首页每页显示的文章数
 disqusShortname = ""  # disqus_shortname
 googleAnalytics = ""  # UA-XXXXXXXX-X
 copyright = ""        # default: author.name ↓        # 默认为下面配置的author.name ↓
+
+[frontmatter]
+lastmod = [':git', 'lastmod', ':fileModTime', ':default']
 
 [sitemap] # essential                     # 必需
 changefreq = "weekly"
