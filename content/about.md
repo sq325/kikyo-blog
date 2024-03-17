@@ -1,12 +1,11 @@
 ---
 title: "About The Blog"
 date: 2021-09-07T17:43:52+08:00
-lastmod: 2022-06-22T7:43:52+08:00
+lastmod: 2024-03-17T7:43:52+08:00
 toc: false
 
 ---
 *欢迎来到我的Blog！*
-
 
 # 诞生
 

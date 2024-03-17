@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+<head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <title>vmagnet集群模式各节点之间如何分配targets - kikyo</title>
+  <title>vmagnet集群模式详解 - kikyo</title>
   <meta name="renderer" content="webkit" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
 
@@ -16,14 +16,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
 
 
-<meta name="author" content="" /><meta name="description" content="" />
+<meta name="author" content="" /><meta name="description" content="最近在工作中使用了vmagent来收集指标。vmagent具有集群模式，允许配置多个实例来采集相同的一群目标。与Raft协议集群不同，vma" />
 
 
 
 
 
 
-<link rel="canonical" href="//localhost:1313/post/vmagent%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8Fvmagnet%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E5%90%84%E8%8A%82%E7%82%B9%E4%B9%8B%E9%97%B4%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8Dtarget/" />
+<link rel="canonical" href="/post/vmagent%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8Fvmagnet%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E5%90%84%E8%8A%82%E7%82%B9%E4%B9%8B%E9%97%B4%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8Dtarget/" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -36,19 +36,19 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
 
 
-<meta property="og:title" content="vmagnet集群模式各节点之间如何分配targets" />
-<meta property="og:description" content="" />
+<meta property="og:title" content="vmagnet集群模式详解" />
+<meta property="og:description" content="最近在工作中使用了vmagent来收集指标。vmagent具有集群模式，允许配置多个实例来采集相同的一群目标。与Raft协议集群不同，vma" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="//localhost:1313/post/vmagent%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8Fvmagnet%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E5%90%84%E8%8A%82%E7%82%B9%E4%B9%8B%E9%97%B4%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8Dtarget/" /><meta property="article:section" content="post" />
+<meta property="og:url" content="/post/vmagent%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8Fvmagnet%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E5%90%84%E8%8A%82%E7%82%B9%E4%B9%8B%E9%97%B4%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8Dtarget/" /><meta property="article:section" content="post" />
 <meta property="article:published_time" content="2024-03-17T13:47:44+08:00" />
 <meta property="article:modified_time" content="2024-03-17T14:27:40+08:00" />
 
-<meta itemprop="name" content="vmagnet集群模式各节点之间如何分配targets">
-<meta itemprop="description" content=""><meta itemprop="datePublished" content="2024-03-17T13:47:44+08:00" />
+<meta itemprop="name" content="vmagnet集群模式详解">
+<meta itemprop="description" content="最近在工作中使用了vmagent来收集指标。vmagent具有集群模式，允许配置多个实例来采集相同的一群目标。与Raft协议集群不同，vma"><meta itemprop="datePublished" content="2024-03-17T13:47:44+08:00" />
 <meta itemprop="dateModified" content="2024-03-17T14:27:40+08:00" />
-<meta itemprop="wordCount" content="0">
-<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="vmagnet集群模式各节点之间如何分配targets"/>
-<meta name="twitter:description" content=""/>
+<meta itemprop="wordCount" content="1810">
+<meta itemprop="keywords" content="vmagent," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="vmagnet集群模式详解"/>
+<meta name="twitter:description" content="最近在工作中使用了vmagent来收集指标。vmagent具有集群模式，允许配置多个实例来采集相同的一群目标。与Raft协议集群不同，vma"/>
 
 <!--[if lte IE 9]>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -125,13 +125,15 @@
           <article class="post">
     
     <header class="post-header">
-      <h1 class="post-title">vmagnet集群模式各节点之间如何分配targets</h1>
+      <h1 class="post-title">vmagnet集群模式详解</h1>
 
       <div class="post-meta">
         <span class="post-time"> 2024-03-17 </span>
-        
-          <span class="more-meta"> 约 0 字 </span>
-          <span class="more-meta"> 预计阅读 0 分钟 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 1810 字 </span>
+          <span class="more-meta"> 预计阅读 4 分钟 </span>
         
       </div>
     </header>
@@ -139,11 +141,293 @@
     <div class="post-toc" id="post-toc">
   <h2 class="post-toc-title">文章目录</h2>
   <div class="post-toc-content">
-    <nav id="TableOfContents"></nav>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#target如何在成员中分配">target如何在成员中分配</a></li>
+    <li><a href="#使用statefulset部署vmagent集群">使用StatefulSet部署vmagent集群</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
   </div>
 </div>
     <div class="post-content">
-      
+      <p>最近在工作中使用了vmagent来收集指标。vmagent具有集群模式，允许配置多个实例来采集相同的一群目标。与Raft协议集群不同，vmagent实例在设置了<code>-remoteWrite.disableOnDiskQueue</code>后可被视为无状态，因此无需复杂协议来维持成员状态一致。主要挑战在于如何将需要采集的目标分配到各个成员中。</p>
+<p>本文参考源码介绍vmagent集群模式的细节，回答以下问题：</p>
+<ol>
+<li>targets如何在集群成员中分配</li>
+<li>如何使用StatefulSet部署vmagent集群</li>
+</ol>
+<h1 id="target如何在成员中分配">target如何在成员中分配</h1>
+<p>vmagent集群模式最重要的参数有两个：</p>
+<ul>
+<li>
+<p><code>-promscrape.cluster.membersCount</code> 集群总成员数</p>
+</li>
+<li>
+<p><code>-promscrape.cluster.memberNum</code> 当前成员编号，范围在0到membersCount-1</p>
+</li>
+</ul>
+<p>在探究具体原理前，我们先看一个简单的例子：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 启动成员0</span>
+</span></span><span class="line"><span class="cl">/path/to/vmagent -promscrape.cluster.membersCount<span class="o">=</span><span class="m">2</span> -promscrape.cluster.memberNum<span class="o">=</span><span class="m">0</span> -promscrape.config<span class="o">=</span>/path/to/config.yml ...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 启动成员1</span>
+</span></span><span class="line"><span class="cl">/path/to/vmagent -promscrape.cluster.membersCount<span class="o">=</span><span class="m">2</span> -promscrape.cluster.memberNum<span class="o">=</span><span class="m">1</span> -promscrape.config<span class="o">=</span>/path/to/config.yml ...
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如上例所示，创建集群成员时，需指定成员总数（membersCount）和当前成员编号（memberNum），同时所有成员的scrape配置必须相同，这是vmagent集群的全部必要信息。</p>
+<p>vmagent首先解析scrape配置以生成所有targets，这些targets以各个标签的形式存在。然后将targets分配给集群中的各成员进行采集。问题可简化为：如何将m个targets分配给n个成员，确保每个target都被分配到1个成员。vmagent通过将每个target转换为整数，然后对成员总数取余来实现这一过程，如下图所示：</p>
+<p><img src="/Users/sunquan/Documents/blog/Even/content/post/vmagent%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8Fvmagnet%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E5%90%84%E8%8A%82%E7%82%B9%E4%B9%8B%E9%97%B4%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8Dtarget/image-20240317171059478.png" alt="image-20240317171059478"></p>
+<p>源码如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getClusterMemberNumsForScrapeWork</span><span class="p">(</span><span class="nx">key</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">membersCount</span><span class="p">,</span> <span class="nx">replicasCount</span> <span class="kt">int</span><span class="p">)</span> <span class="p">[]</span><span class="kt">int</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 对target的labels做哈希运算 -&gt; h
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// h取模 -&gt; idx
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">h</span> <span class="o">:=</span> <span class="nx">xxhash</span><span class="p">.</span><span class="nf">Sum64</span><span class="p">(</span><span class="nx">bytesutil</span><span class="p">.</span><span class="nf">ToUnsafeBytes</span><span class="p">(</span><span class="nx">key</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">idx</span> <span class="o">:=</span> <span class="nb">int</span><span class="p">(</span><span class="nx">h</span> <span class="o">%</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">membersCount</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// memberNums为需要采集此target的memberNum列表
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// idx余数作为需要采集此target的memberNum
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// 如果replicasCount大于1，idx++作为另一个需要采集的memberNum，以此类推
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">memberNums</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">int</span><span class="p">,</span> <span class="nx">replicasCount</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">replicasCount</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">memberNums</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">idx</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">idx</span><span class="o">++</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">idx</span> <span class="o">&gt;=</span> <span class="nx">membersCount</span> <span class="p">{</span> <span class="c1">// 边界处理
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">idx</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">memberNums</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果<code>replicasCount&gt;1</code>，需要把target分配到多个成员，vmagent采取了一种简单的方法，即将编号+1的下一个成员处理，依此类推，如下图所示：</p>
+<img src="/Users/sunquan/Documents/blog/Even/content/post/vmagent集群模式vmagnet集群模式各节点之间如何分配target/image-20240317221604472.png" alt="image-20240317221604472" style="zoom:50%;" />
+<p>如果target恰好分配给最后一个成员，则下一个成员的编号为0，即重新开始。</p>
+<img src="/Users/sunquan/Documents/blog/Even/content/post/vmagent集群模式vmagnet集群模式各节点之间如何分配target/image-20240317221712846.png" alt="image-20240317221712846" style="zoom:50%;" />
+<h1 id="使用statefulset部署vmagent集群">使用StatefulSet部署vmagent集群</h1>
+<p>明白了集群的原理，下面来介绍如何使用StatefulSet部署vmagent集群。通过 <code>memberNum </code>指定成员编号时，可以把编号放在名称的最后，用 <code>-</code> 和前面的字符隔开。这样我们通过StatefulSet</p>
+<p>我们知道StatefulSet创建的pod名称格式为：<code>{podName}-{Num}</code>，<code>memberNum </code> 选项支持通过这种格式定义成员编号。这里直接放出源码展示其原理：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">mustInitClusterMemberID</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">s</span> <span class="o">:=</span> <span class="o">*</span><span class="nx">clusterMemberNum</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// 把左右 - 后面的数字作为成员编号
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">idx</span> <span class="o">:=</span> <span class="nx">strings</span><span class="p">.</span><span class="nf">LastIndexByte</span><span class="p">(</span><span class="nx">s</span><span class="p">,</span> <span class="sc">&#39;-&#39;</span><span class="p">);</span> <span class="nx">idx</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">s</span> <span class="p">=</span> <span class="nx">s</span><span class="p">[</span><span class="nx">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">n</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Atoi</span><span class="p">(</span><span class="nx">s</span><span class="p">)</span> <span class="c1">// 如果 - 后面的不能转化为整数，这里会报错
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="o">...</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">clusterMemberID</span> <span class="p">=</span> <span class="nx">n</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这里直接给一个StatefulSet部署vmagent集群的例子：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">StatefulSet</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">docker.io/library/vmagent_darwin:v1.99.0</span><span class="w"> </span><span class="c"># 换成自己镜像仓库的地址</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-promscrape.config=/vmagent/vmagent.yml&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-remoteWrite.url=http://10.10.10.10:9090/api/v1/write&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-promscrape.config.strictParse=false&#34;</span><span class="w"> </span><span class="c"># 可以直接解析prom的配置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-remoteWrite.disableOnDiskQueue&#34;</span><span class="w"> </span><span class="c"># 不保存数据到本地</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-promscrape.suppressDuplicateScrapeTargetErrors&#34;</span><span class="w"> </span><span class="c"># 压制pod暴露多个port导致target重复Error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-promscrape.cluster.membersCount=2&#34;</span><span class="w"> </span><span class="c"># 集群成员数量</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-promscrape.cluster.memberNum=$(POD_NAME)&#34;</span><span class="w"> </span><span class="c"># 集群成员编号，从0开始</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-envflag.enable=true&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-envflag.prefix=VM_&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8429</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l">TCP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">volumeMounts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;/vmagent/&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent-config</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">POD_NAME</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">valueFrom</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">fieldRef</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">fieldPath</span><span class="p">:</span><span class="w"> </span><span class="l">metadata.name</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">node-exporter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">bitnami/node-exporter:latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;128Mi&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;500m&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">9100</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">volumes</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent-config</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">configMap</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent-config</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">items</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span>- <span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent.yml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent.yml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">clusterIP</span><span class="p">:</span><span class="w"> </span><span class="l">None</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">vmagent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8429</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="m">8429</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="总结">总结</h1>
+<p>vmagent 如何分配 target 到各个成员：</p>
+<ol>
+<li>对 target 标签进行哈希运算得到一个整数</li>
+<li>对该整数和成员数量取余，得到分配给 traget 的成员</li>
+<li>如果副本数为2，那么编号加1的成员也会被分配</li>
+<li>如果遇到最后一个编号，将从头开始分配</li>
+</ol>
+<p>这个集群实现的优点很明显，实现简单，如果targets非常多，确实可以分散采集负载，降低单个成员的采集压力。</p>
+<p>缺点也同样明显，如果vmagent集群中某个成员挂掉，集群中其他成员无法感知，也无法代替它采集这部分targets，会导致丢失部分targets指标。解决办法就是设置副本数，本质上是通过数据冗余来解决高可用问题。</p>
+<h1 id="参考">参考</h1>
+<p><a href="https://docs.victoriametrics.com/vmagent/">vmagent官方文档</a></p>
+<p><a href="https://p8s.io/docs/victoriametrics/vmagent/">vmagent介绍</a></p>
     </div>
 
     <div class="post-copyright">
@@ -162,13 +446,11 @@
   
 </div>
 <footer class="post-footer">
-      
+      <div class="post-tags">
+          <a href="/tags/vmagent/">vmagent</a>
+          </div>
       <nav class="post-nav">
-        <a class="prev" href="/post/context%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-            <i class="iconfont icon-left"></i>
-            <span class="prev-text nav-default">Index</span>
-            <span class="prev-text nav-mobile">上一篇</span>
-          </a>
+        
         <a class="next" href="/post/k8s%E8%AE%A4%E8%AF%81%E5%8E%9F%E7%90%86/">
             <span class="next-text nav-default">k8s认证原理</span>
             <span class="next-text nav-mobile">下一篇</span>
