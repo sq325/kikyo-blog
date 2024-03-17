@@ -2,24 +2,24 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>TCP on kikyo</title>
-    <link>/tags/tcp/</link>
+    <link>/kikyo-blog/tags/tcp/</link>
     <description>Recent content in TCP on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Sat, 04 Dec 2021 16:08:38 +0800</lastBuildDate>
-    <atom:link href="/tags/tcp/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="/kikyo-blog/tags/tcp/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>TCP-常见问题汇总</title>
-      <link>/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</link>
+      <link>/kikyo-blog/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</link>
       <pubDate>Mon, 20 Sep 2021 22:17:00 +0800</pubDate>
-      <guid>/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</guid>
+      <guid>/kikyo-blog/post/tcp%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</guid>
       <description>&lt;p&gt;使用场景：总结互联网应用会遇到的各种TCP/IP协议、网络报文等问题。&lt;/p&gt;</description>
     </item>
     <item>
       <title>使用tcpdump抓包</title>
-      <link>/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</link>
+      <link>/kikyo-blog/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</link>
       <pubDate>Mon, 20 Sep 2021 22:09:52 +0800</pubDate>
-      <guid>/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</guid>
+      <guid>/kikyo-blog/post/%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E5%8C%85/</guid>
       <description>&lt;p&gt;使用场景：可以在主机获取各协议的报文，分析通讯问题的利器。&lt;/p&gt;</description>
     </item>
   </channel>
