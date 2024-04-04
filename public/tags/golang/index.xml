@@ -6,8 +6,15 @@
     <description>Recent content in Golang on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 17 Mar 2024 14:27:40 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 04 Apr 2024 20:13:00 +0800</lastBuildDate>
     <atom:link href="/tags/golang/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>pod重启相关问题汇总</title>
+      <link>/post/pod%E9%87%8D%E5%90%AF%E7%9B%B8%E5%85%B3%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</link>
+      <pubDate>Sat, 30 Mar 2024 23:59:42 +0800</pubDate>
+      <guid>/post/pod%E9%87%8D%E5%90%AF%E7%9B%B8%E5%85%B3%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</guid>
+      <description>多容器 Pod 重启策略 问题一：什么情况下整个 Pod 会发生被 Kill（重启） initContainer运行失败，并且 Pod的重启策略是Never 加上 Pod 的</description>
+    </item>
     <item>
       <title>Golang执行linux命令</title>
       <link>/post/demo_golang_exec/</link>
