@@ -1,0 +1,10 @@
+{
+  "editor.quickSuggestions": {
+    "other": "off"
+  },
+  "editor.suggest.selectionMode": "never",
+  "markdownlint.config": {
+
+    "no-hard-tabs": false
+  }
+}
