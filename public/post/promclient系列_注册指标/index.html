@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Prometheus指标注册与采集过程源码解析 - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="解析 Prometheus 官方仪表化库第一篇，聚焦指标的注册和收集。
+" />
+
+
+
+
+
+
+<link rel="canonical" href="/post/promclient%E7%B3%BB%E5%88%97_%E6%B3%A8%E5%86%8C%E6%8C%87%E6%A0%87/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Prometheus指标注册与采集过程源码解析" />
+<meta property="og:description" content="解析 Prometheus 官方仪表化库第一篇，聚焦指标的注册和收集。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/post/promclient%E7%B3%BB%E5%88%97_%E6%B3%A8%E5%86%8C%E6%8C%87%E6%A0%87/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2024-03-24T16:14:34+08:00" />
+<meta property="article:modified_time" content="2024-04-04T20:13:00+08:00" />
+
+<meta itemprop="name" content="Prometheus指标注册与采集过程源码解析">
+<meta itemprop="description" content="解析 Prometheus 官方仪表化库第一篇，聚焦指标的注册和收集。"><meta itemprop="datePublished" content="2024-03-24T16:14:34+08:00" />
+<meta itemprop="dateModified" content="2024-04-04T20:13:00+08:00" />
+<meta itemprop="wordCount" content="3939">
+<meta itemprop="keywords" content="Prometheus," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Prometheus指标注册与采集过程源码解析"/>
+<meta name="twitter:description" content="解析 Prometheus 官方仪表化库第一篇，聚焦指标的注册和收集。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Prometheus指标注册与采集过程源码解析</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2024-03-24 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 3939 字 </span>
+          <span class="more-meta"> 预计阅读 8 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#从一个简单的例子开始">从一个简单的例子开始</a></li>
+    <li><a href="#指标如何被注册">指标如何被注册</a>
+      <ul>
+        <li><a href="#创建一个-collector">创建一个 Collector</a></li>
+        <li><a href="#创建一个-register">创建一个 Register</a></li>
+        <li><a href="#将-collector-注册到-register">将 Collector 注册到 Register</a></li>
+      </ul>
+    </li>
+    <li><a href="#拉取指标的过程">拉取指标的过程</a>
+      <ul>
+        <li><a href="#仪表化httphandler">仪表化http.Handler</a></li>
+        <li><a href="#收集指标">收集指标</a></li>
+      </ul>
+    </li>
+    <li><a href="#使用自己定义的register">使用自己定义的Register</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>解析 Prometheus 官方仪表化库第一篇，聚焦指标的注册和收集。</p>
+<h1 id="从一个简单的例子开始">从一个简单的例子开始</h1>
+<p>Prometheus 是云原生领域内的标准监控工具，广泛应用于众多知名服务中。官方提供了多种语言的<a href="https://prometheus.io/docs/instrumenting/clientlibs/">仪表化库</a>，简化应用的仪表化（Instrument）过程。Prometheus 的指标以文本格式呈现，通过 HTTP 协议暴露指标接口，<strong><code>Content-Type</code></strong> 为 <code>text/plain</code>。</p>
+<p>本文从一个简单的仪表化例子开始，介绍仪表化的基本步骤，并详细解析指标注册和指标收集。</p>
+<p>以 Go 语言为例，仪表化过程必要步骤如下：</p>
+<ol>
+<li>定义指标</li>
+<li>注册指标</li>
+<li>指标埋点</li>
+<li>注册 <code>http.Handler</code></li>
+</ol>
+<p>以 <code>cpu_temperature_celsius</code> 指标为例，完整代码如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl"> <span class="s">&#34;log&#34;</span>
+</span></span><span class="line"><span class="cl"> <span class="s">&#34;net/http&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="s">&#34;github.com/prometheus/client_golang/prometheus&#34;</span>
+</span></span><span class="line"><span class="cl"> <span class="s">&#34;github.com/prometheus/client_golang/prometheus/promhttp&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 1. 定义指标
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">cpuTemp</span> <span class="p">=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">NewGauge</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">GaugeOpts</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;cpu_temperature_celsius&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">Help</span><span class="p">:</span> <span class="s">&#34;Current temperature of the CPU.&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"> <span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 2. 注册指标
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">MustRegister</span><span class="p">(</span><span class="nx">cpuTemp</span><span class="p">)</span> 
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">cpuTemp</span><span class="p">.</span><span class="nf">Set</span><span class="p">(</span><span class="mf">65.3</span><span class="p">)</span> <span class="c1">// 3. 指标埋点
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">http</span><span class="p">.</span><span class="nf">Handle</span><span class="p">(</span><span class="s">&#34;/metrics&#34;</span><span class="p">,</span> <span class="nx">promhttp</span><span class="p">.</span><span class="nf">Handler</span><span class="p">())</span> <span class="c1">// 4. 注册http handler
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nf">ListenAndServe</span><span class="p">(</span><span class="s">&#34;:8000&#34;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Prometheus 有四种指标类型。上面的例子定义了一个 Gauge 指标，用于表示 CPU 温度。定义完指标后，将其注册到仪表库提供的注册器（Register）中，完成仪表化准备。我们需要在适当位置获取CPU温度并提供给指标，最后通过HTTP接口暴露指标。访问<code>http://localhost:8080/metrics</code> 输出如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl"># HELP cpu_temperature_celsius Current temperature of the CPU.
+</span></span><span class="line"><span class="cl"># TYPE cpu_temperature_celsius gauge
+</span></span><span class="line"><span class="cl">cpu_temperature_celsius 65.3
+</span></span><span class="line"><span class="cl"># HELP promhttp_metric_handler_requests_in_flight Current number of scrapes being served.
+</span></span><span class="line"><span class="cl"># TYPE promhttp_metric_handler_requests_in_flight gauge
+</span></span><span class="line"><span class="cl">promhttp_metric_handler_requests_in_flight 1
+</span></span><span class="line"><span class="cl"># HELP promhttp_metric_handler_requests_total Total number of scrapes by HTTP status code.
+</span></span><span class="line"><span class="cl"># TYPE promhttp_metric_handler_requests_total counter
+</span></span><span class="line"><span class="cl">promhttp_metric_handler_requests_total{code=&#34;200&#34;} 0
+</span></span><span class="line"><span class="cl">promhttp_metric_handler_requests_total{code=&#34;500&#34;} 0
+</span></span><span class="line"><span class="cl">promhttp_metric_handler_requests_total{code=&#34;503&#34;} 0
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>上述就是仪表化应用的过程，接下来我们解析这一切的背后到底发生了什么。</p>
+<h1 id="指标如何被注册">指标如何被注册</h1>
+<p>注册指标的过程如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">graph LR
+</span></span><span class="line"><span class="cl"> A[NewGauge] --&gt; B[MustRegister]
+</span></span><span class="line"><span class="cl"> B --&gt; C[promhttp.Handler]
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="创建一个-collector">创建一个 Collector</h2>
+<p>首先，<code>NewGauge</code> 创建一个 Gauge 指标，同时也创建了一个 <code>Collector</code>。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">NewGauge</span><span class="p">(</span><span class="nx">opts</span> <span class="nx">GaugeOpts</span><span class="p">)</span> <span class="nx">Gauge</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">desc</span> <span class="o">:=</span> <span class="nf">NewDesc</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">BuildFQName</span><span class="p">(</span><span class="nx">opts</span><span class="p">.</span><span class="nx">Namespace</span><span class="p">,</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">Subsystem</span><span class="p">,</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">Name</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">opts</span><span class="p">.</span><span class="nx">Help</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="kc">nil</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">opts</span><span class="p">.</span><span class="nx">ConstLabels</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">result</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">gauge</span><span class="p">{</span><span class="nx">desc</span><span class="p">:</span> <span class="nx">desc</span><span class="p">,</span> <span class="nx">labelPairs</span><span class="p">:</span> <span class="nx">desc</span><span class="p">.</span><span class="nx">constLabelPairs</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">result</span><span class="p">.</span><span class="nf">init</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> 
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="nx">result</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Gauge 是一个实现了 Collector 的接口
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Gauge</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Metric</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Collector</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Collector 接口，用来收集 Metric
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Collector</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Describe</span><span class="p">(</span><span class="kd">chan</span><span class="o">&lt;-</span> <span class="o">*</span><span class="nx">Desc</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Collect</span><span class="p">(</span><span class="kd">chan</span><span class="o">&lt;-</span> <span class="nx">Metric</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Prometheus 原生有四种指标类型，分别是 Counter、Gauge、Histogram 和 Summary。这四种指标类型都实现了 <code>Collector</code> 接口。<code>Collector</code> 接口定义了两个方法：<code>Describe</code> 和 <code>Collect</code>。<code>Describe</code> 方法用于描述指标，<code>Collect</code> 方法用于收集指标。如果我们使用原生的指标类型，并且使用 <code>NewXXX</code> 函数创建指标，那么我们默认就创建了一个 <code>Collector</code>。</p>
+<h2 id="创建一个-register">创建一个 Register</h2>
+<p>注册指标被定义在 <code>Registerer</code> 接口中，其中 <code>Register(Collector)</code> 方法表明其并不是注册指标本身，而是注册一个收集器（<code>Collector</code>）。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Registerer</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Register</span><span class="p">(</span><span class="nx">Collector</span><span class="p">)</span> <span class="kt">error</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">MustRegister</span><span class="p">(</span><span class="o">...</span><span class="nx">Collector</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Unregister</span><span class="p">(</span><span class="nx">Collector</span><span class="p">)</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>例子中我们并未显性创建 <code>Registry</code>，而是直接调用 <code>prometheus.MustRegister(cpuTemp)</code> 注册指标，这是因为 <code>MustRegister</code> 函数调用了默认注册器 <code>DefaultRegisterer</code> 的注册函数。<code>DefaultRegisterer</code> 是一个全局变量，其默认值是 <code>DefaultRegisterer = defaultRegistry</code>。<code>defaultRegistry</code> 是一个 <code>Registry</code> 结构体，实现了 <code>Registerer</code> 接口。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">MustRegister</span><span class="p">(</span><span class="nx">cs</span> <span class="o">...</span><span class="nx">Collector</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">DefaultRegisterer</span><span class="p">.</span><span class="nf">MustRegister</span><span class="p">(</span><span class="nx">cs</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">defaultRegistry</span>              <span class="p">=</span> <span class="nf">NewRegistry</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">DefaultRegisterer</span> <span class="nx">Registerer</span> <span class="p">=</span> <span class="nx">defaultRegistry</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">DefaultGatherer</span>   <span class="nx">Gatherer</span>   <span class="p">=</span> <span class="nx">defaultRegistry</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="将-collector-注册到-register">将 Collector 注册到 Register</h2>
+<p><code>Registry</code> 结构体是后续收集指标的核心，其实现了 <code>Collector</code>、<code>Gather</code> 和 <code>Registerer</code> 三个接口，其中最重要的是 <code>Gatherer</code> 接口。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">classDiagram
+</span></span><span class="line"><span class="cl">  class Registerer{
+</span></span><span class="line"><span class="cl">   &lt;&lt;interface&gt;&gt;
+</span></span><span class="line"><span class="cl">    Register(Collector) error
+</span></span><span class="line"><span class="cl">    MustRegister(...Collector)
+</span></span><span class="line"><span class="cl">    Unregister(Collector) bool
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">  class Resigtry {
+</span></span><span class="line"><span class="cl">   Register(c Collector) error 
+</span></span><span class="line"><span class="cl">   Unregister(c Collector) bool
+</span></span><span class="line"><span class="cl">   MustRegister(cs ...Collector)
+</span></span><span class="line"><span class="cl">   Gather() ([]*dto.MetricFamily, error)
+</span></span><span class="line"><span class="cl">   Describe(ch chan&lt;- *Desc)
+</span></span><span class="line"><span class="cl">   Collect(ch chan&lt;- Metric)
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">  class Collector {
+</span></span><span class="line"><span class="cl">   &lt;&lt;interface&gt;&gt;
+</span></span><span class="line"><span class="cl">    Describe(chan&lt;- *Desc)
+</span></span><span class="line"><span class="cl">    Collect(chan&lt;- Metric)
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">  class Gatherer {
+</span></span><span class="line"><span class="cl">   &lt;&lt;interface&gt;&gt;
+</span></span><span class="line"><span class="cl">  Gather() ([]*dto.MetricFamily, error)
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl"> Registerer &lt;|.. Resigtry
+</span></span><span class="line"><span class="cl"> Collector &lt;|.. Resigtry
+</span></span><span class="line"><span class="cl"> Gatherer &lt;|.. Resigtry
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这里补充一个小知识帮助区分 <code>Gatherer</code> 和 <code>Collector</code> 。两者都是接口，英文中 &ldquo;collect&rdquo; 和 &ldquo;gather&rdquo; 两个单词都有收集的意思，细微的分别在于 &ldquo;collect&rdquo; 通常涉及收集一组或同一个集合其中的一部分，而 gather 指从不同的来源汇聚到一起。<code>Collector</code> 用于收集一系列具有相同目的指标，如 Prometheus 中的一个指标，可以有不同的标签，但指标名不变。而 <code>Gatherer</code> 接口用于汇聚多个不同的 <code>Collector</code>，即收集不同名称的指标。举例来说，如果只是收集 <code>CpuTemp</code> 单个指标的数据，不管是 <code>CpuTemp{CPU=&quot;cpu1&quot;}</code> 还是 <code>CpuTemp{CPU=&quot;cpu2&quot;}</code>，都只能算是 &ldquo;collect&rdquo;，所以 <code>CpuTemp</code> 应该实现 <code>Collector</code> 接口。若需同时收集 <code>CpuTemp</code> 和 <code>MemUsage</code> 等不同指标数据，则属于 &ldquo;gather&rdquo;，需要用实现了 <code>Gatherer</code> 接口的 <code>Registry</code>。</p>
+<p>让我们仔细看看 <code>Registry</code> 结构体的真容，其最核心的字段是 <code>collectorsByID</code>，用于储存注册了的 <code>Collector</code>。以下是 <code>Registry</code> 结构体的部分代码：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">NewRegistry</span><span class="p">()</span> <span class="o">*</span><span class="nx">Registry</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="o">&amp;</span><span class="nx">Registry</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">collectorsByID</span><span class="p">:</span>  <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="nx">Collector</span><span class="p">{},</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">descIDs</span><span class="p">:</span>         <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}{},</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">dimHashesByName</span><span class="p">:</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">uint64</span><span class="p">{},</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Registerer</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="nf">Register</span><span class="p">(</span><span class="nx">Collector</span><span class="p">)</span> <span class="kt">error</span>
+</span></span><span class="line"><span class="cl"> <span class="nf">MustRegister</span><span class="p">(</span><span class="o">...</span><span class="nx">Collector</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="nf">Unregister</span><span class="p">(</span><span class="nx">Collector</span><span class="p">)</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Registry</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">mtx</span>                   <span class="nx">sync</span><span class="p">.</span><span class="nx">RWMutex</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">collectorsByID</span>        <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="nx">Collector</span> <span class="c1">// 已注册的收集器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">descIDs</span>               <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}</span> <span class="c1">// 描述符 ID
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">dimHashesByName</span>       <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">uncheckedCollectors</span>   <span class="p">[]</span><span class="nx">Collector</span> <span class="c1">// 未经检查的收集器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">pedanticChecksEnabled</span> <span class="kt">bool</span> <span class="c1">// 是否启用详细检查
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>Registry</code> 中的 <code>Register(c Collector)</code> 方法会把需要注册的 <code>Collector</code> 写入 <code>Registry</code> 相关属性。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">Registry</span><span class="p">)</span> <span class="nf">Register</span><span class="p">(</span><span class="nx">c</span> <span class="nx">Collector</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">descChan</span>           <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="o">*</span><span class="nx">Desc</span><span class="p">,</span> <span class="nx">capDescChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">newDescIDs</span>         <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}{}</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">newDimHashesByName</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">uint64</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">collectorID</span>        <span class="kt">uint64</span> <span class="c1">// All desc IDs XOR&#39;d together.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">duplicateDescErr</span>   <span class="kt">error</span>
+</span></span><span class="line"><span class="cl"> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="c1">// 将描述符发送到 descChan 通道
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">c</span><span class="p">.</span><span class="nf">Describe</span><span class="p">(</span><span class="nx">descChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">close</span><span class="p">(</span><span class="nx">descChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="o">...</span> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> <span class="k">for</span> <span class="nx">desc</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">descChan</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">exists</span> <span class="o">:=</span> <span class="nx">newDescIDs</span><span class="p">[</span><span class="nx">desc</span><span class="p">.</span><span class="nx">id</span><span class="p">];</span> <span class="p">!</span><span class="nx">exists</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="c1">// 获取新 descIds 和 collectorID
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>   <span class="nx">newDescIDs</span><span class="p">[</span><span class="nx">desc</span><span class="p">.</span><span class="nx">id</span><span class="p">]</span> <span class="p">=</span> <span class="kd">struct</span><span class="p">{}{}</span>
+</span></span><span class="line"><span class="cl">   <span class="nx">collectorID</span> <span class="p">^=</span> <span class="nx">desc</span><span class="p">.</span><span class="nx">id</span> <span class="c1">// collectorID
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// 获取新 DimHashes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">newDimHashesByName</span><span class="p">[</span><span class="nx">desc</span><span class="p">.</span><span class="nx">fqName</span><span class="p">]</span> <span class="p">=</span> <span class="nx">desc</span><span class="p">.</span><span class="nx">dimHash</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="o">...</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="c1">// 将新 descIds、collectorID、DimHashes 存储 register
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">r</span><span class="p">.</span><span class="nx">collectorsByID</span><span class="p">[</span><span class="nx">collectorID</span><span class="p">]</span> <span class="p">=</span> <span class="nx">c</span>
+</span></span><span class="line"><span class="cl"> <span class="k">for</span> <span class="nx">hash</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">newDescIDs</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">r</span><span class="p">.</span><span class="nx">descIDs</span><span class="p">[</span><span class="nx">hash</span><span class="p">]</span> <span class="p">=</span> <span class="kd">struct</span><span class="p">{}{}</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="k">for</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">dimHash</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">newDimHashesByName</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">r</span><span class="p">.</span><span class="nx">dimHashesByName</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="p">=</span> <span class="nx">dimHash</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中<code>collectorID</code> 是通过将所有描述符ID（<code>desc.id</code>） 进行异或操作得到的。这是一种创建唯一标识符的方法。异或操作（XOR）当两个比较位（bit）相同，结果为0，当两个比较位不同，结果为1：</p>
+<ol>
+<li>任何数和 0 做异或操作，结果仍然是原来的数。</li>
+<li>任何数和其自身做异或操作，结果是 0。</li>
+<li>异或操作满足交换律和结合律。</li>
+</ol>
+<p>因此，无论描述符的 ID 以何种顺序出现，其异或结果（即 <code>collectorID</code>）都是一样的。这意味着，只要一个收集器产生的描述符 ID 集合不变，那么计算出的 <code>collectorID</code> 就会保持不变，从而可以作为该收集器的唯一标识符。</p>
+<h1 id="拉取指标的过程">拉取指标的过程</h1>
+<p>每次通过 <code>/metrics</code> 拉取指标，都会触发一次 <code>gather</code>，执行所有 <code>Collector</code> 去收集指标。流程如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">graph TD
+</span></span><span class="line"><span class="cl"> A[promhttp.Handler] --&gt; B[InstrumentMetricHandler]
+</span></span><span class="line"><span class="cl"> B --&gt; E[HandlerFor]
+</span></span><span class="line"><span class="cl"> B --&gt; C[InstrumentHandlerCounter]
+</span></span><span class="line"><span class="cl"> C --&gt; D[InstrumentHandlerInFlight]
+</span></span><span class="line"><span class="cl"> E --&gt; F[HandlerForTransactional]
+</span></span><span class="line"><span class="cl"> F --&gt; G[reg.Gather]
+</span></span><span class="line"><span class="cl"> G --&gt; H[enc.Encode]
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中 <code>InstrumentXXX</code> 函数用于仪表化 /metrics 接口，HandlerFor 函数用于生成 http.Handler。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// promhttp 的入口函数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">Handler</span><span class="p">()</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="nf">InstrumentMetricHandler</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">prometheus</span><span class="p">.</span><span class="nx">DefaultRegisterer</span><span class="p">,</span> <span class="nf">HandlerFor</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">DefaultGatherer</span><span class="p">,</span> <span class="nx">HandlerOpts</span><span class="p">{}),</span>
+</span></span><span class="line"><span class="cl"> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="仪表化httphandler">仪表化http.Handler</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">graph LR
+</span></span><span class="line"><span class="cl">	A[InstrumentMetricHandler] --&gt; B[InstrumentHandlerCounter]
+</span></span><span class="line"><span class="cl">	B --&gt; C[InstrumentHandlerInFlight]
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>InstrumentMetricHandler</code> 中定义了两个指标，分别是：</p>
+<ol>
+<li><code>promhttp_metric_handler_requests_total</code> 已处理的请求总数</li>
+<li><code>promhttp_metric_handler_requests_in_flight</code>：处理中的请求数</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">InstrumentMetricHandler</span><span class="p">(</span><span class="nx">reg</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">Registerer</span><span class="p">,</span> <span class="nx">handler</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="p">)</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="c1">// 定义并注册两个指标：
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="c1">// 1. promhttp_metric_handler_requests_total：处理的请求总数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">cnt</span> <span class="o">:=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">NewCounterVec</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">prometheus</span><span class="p">.</span><span class="nx">CounterOpts</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;promhttp_metric_handler_requests_total&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nx">Help</span><span class="p">:</span> <span class="s">&#34;Total number of scrapes by HTTP status code.&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;code&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl"> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl"> <span class="c1">// 2. promhttp_metric_handler_requests_in_flight：处理中的请求数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">gge</span> <span class="o">:=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">NewGauge</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">GaugeOpts</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;promhttp_metric_handler_requests_in_flight&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">Help</span><span class="p">:</span> <span class="s">&#34;Current number of scrapes being served.&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"> <span class="p">})</span>
+</span></span><span class="line"><span class="cl"> <span class="o">...</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="nf">InstrumentHandlerCounter</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="nf">InstrumentHandlerInFlight</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="nx">handler</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>InstrumentHandlerCounter</code> 和 <code>InstrumentHandlerInFlight</code> 可以看成是两个仪表化代理，具有相似的函数签名，作用是进行指标的埋点工作。每当拉取指标的请求到来时，这两个代理会记录并更新上面定义的两个指标。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// promhttp_metric_handler_requests_total
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">InstrumentHandlerCounter</span><span class="p">(</span><span class="nx">counter</span> <span class="o">*</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">CounterVec</span><span class="p">,</span> <span class="nx">next</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="p">,</span> <span class="nx">opts</span> <span class="o">...</span><span class="nx">Option</span><span class="p">)</span> <span class="nx">http</span><span class="p">.</span><span class="nx">HandlerFunc</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="o">...</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">next</span><span class="p">.</span><span class="nf">ServeHTTP</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// promhttp_metric_handler_requests_in_flight
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">InstrumentHandlerInFlight</span><span class="p">(</span><span class="nx">g</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">Gauge</span><span class="p">,</span> <span class="nx">next</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="p">)</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="nx">http</span><span class="p">.</span><span class="nf">HandlerFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">g</span><span class="p">.</span><span class="nf">Inc</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">defer</span> <span class="nx">g</span><span class="p">.</span><span class="nf">Dec</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">next</span><span class="p">.</span><span class="nf">ServeHTTP</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="收集指标">收集指标</h2>
+<p>真正触发 gather 是在 <code>HandlerForTransactional</code> 中。其中定义的 <code>http.Handler</code> <code>h</code> 会收集所有指标并编码，需要注意的是默认 <code>http.Handler</code> 是没有设置timeout，所以最好在采集指标的client端设置timeout。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">HandlerFor</span><span class="p">(</span><span class="nx">reg</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">Gatherer</span><span class="p">,</span> <span class="nx">opts</span> <span class="nx">HandlerOpts</span><span class="p">)</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="nf">HandlerForTransactional</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nf">ToTransactionalGatherer</span><span class="p">(</span><span class="nx">reg</span><span class="p">),</span> <span class="nx">opts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">HandlerForTransactional</span><span class="p">(</span><span class="nx">reg</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">TransactionalGatherer</span><span class="p">,</span> <span class="nx">opts</span> <span class="nx">HandlerOpts</span><span class="p">)</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="o">...</span>  
+</span></span><span class="line"><span class="cl"> <span class="c1">// 未设置timeout
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">h</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nf">HandlerFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">rsp</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">req</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span> 
+</span></span><span class="line"><span class="cl">    <span class="c1">// 收集指标
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">mfs</span><span class="p">,</span> <span class="nx">done</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">reg</span><span class="p">.</span><span class="nf">Gather</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span> 
+</span></span><span class="line"><span class="cl">  <span class="nx">w</span> <span class="o">:=</span> <span class="nx">io</span><span class="p">.</span><span class="nf">Writer</span><span class="p">(</span><span class="nx">rsp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 编码指标
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">enc</span> <span class="o">:=</span> <span class="nx">expfmt</span><span class="p">.</span><span class="nf">NewEncoder</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">contentType</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">mf</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">mfs</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="k">if</span> <span class="nf">handleError</span><span class="p">(</span><span class="nx">enc</span><span class="p">.</span><span class="nf">Encode</span><span class="p">(</span><span class="nx">mf</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span>
+</span></span><span class="line"><span class="cl">   <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl"> <span class="p">})</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 没有timeout，直接返回h
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="k">if</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">Timeout</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="nx">h</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="c1">// 设置timeout
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="k">return</span> <span class="nx">http</span><span class="p">.</span><span class="nf">TimeoutHandler</span><span class="p">(</span><span class="nx">h</span><span class="p">,</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">Timeout</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;Exceeded configured timeout of %v.\n&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">opts</span><span class="p">.</span><span class="nx">Timeout</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"> <span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在 <code>registry.Gather</code> 中，Registry 会把已经注册的所有 <code>Collector</code> 放入 <code>checkedCollectors</code> 和 <code>uncheckedCollectors</code> 两个 channel 中，然后启动多个 goroutine 去收集指标。goroutine 的总数由 <code>goroutineBudget</code> 控制，<code>collectWorker</code> 函数会不断从 <code>checkedCollectors</code> 和 <code>uncheckedCollectors</code> 中取出 <code>Collector</code> 去收集指标，并把收集的指标存入 <code>checkedMetricChan</code> 和 <code>uncheckedMetricChan</code>。
+collectWorker 为 <code>checkedMetricChan</code> 和 <code>uncheckedMetricChan</code> 的生产者，<code>checkedCollectors</code> 和 <code>uncheckedCollectors</code> 的消费者。<code>checkedMetricChan</code> 和 <code>uncheckedMetricChan</code> 会被消费者消费完后关闭，以此来通知生产者停止生产。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">graph LR
+</span></span><span class="line"><span class="cl"> A[collectWorker] --&gt;|checkedMetricChan| B[case metric, ok := &lt;-cmc:]
+</span></span><span class="line"><span class="cl"> A --&gt;|uncheckedMetricChan| C[case metric, ok := &lt;-umc]
+</span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span><span class="lnt">85
+</span><span class="lnt">86
+</span><span class="lnt">87
+</span><span class="lnt">88
+</span><span class="lnt">89
+</span><span class="lnt">90
+</span><span class="lnt">91
+</span><span class="lnt">92
+</span><span class="lnt">93
+</span><span class="lnt">94
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">Registry</span><span class="p">)</span> <span class="nf">Gather</span><span class="p">()</span> <span class="p">([]</span><span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">MetricFamily</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="o">...</span>
+</span></span><span class="line"><span class="cl"> <span class="c1">// 初始化完成 gather 所需的数据结构
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">checkedMetricChan</span>   <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">Metric</span><span class="p">,</span> <span class="nx">capMetricChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">uncheckedMetricChan</span> <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">Metric</span><span class="p">,</span> <span class="nx">capMetricChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">metricHashes</span>        <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}{}</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">wg</span>                  <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">errs</span>                <span class="nx">MultiError</span>    
+</span></span><span class="line"><span class="cl">  <span class="nx">registeredDescIDs</span>   <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl"> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">goroutineBudget</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">collectorsByID</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">uncheckedCollectors</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">metricFamiliesByName</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">MetricFamily</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">dimHashesByName</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">checkedCollectors</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">Collector</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">collectorsByID</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">uncheckedCollectors</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">Collector</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">uncheckedCollectors</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"> <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">collector</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">r</span><span class="p">.</span><span class="nx">collectorsByID</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">checkedCollectors</span> <span class="o">&lt;-</span> <span class="nx">collector</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">collector</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">r</span><span class="p">.</span><span class="nx">uncheckedCollectors</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">uncheckedCollectors</span> <span class="o">&lt;-</span> <span class="nx">collector</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="c1">// 开始工作
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">goroutineBudget</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="c1">// collect 工作为串行
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">collectWorker</span> <span class="o">:=</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="k">case</span> <span class="nx">collector</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">checkedCollectors</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">collector</span><span class="p">.</span><span class="nf">Collect</span><span class="p">(</span><span class="nx">checkedMetricChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="k">case</span> <span class="nx">collector</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">uncheckedCollectors</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">collector</span><span class="p">.</span><span class="nf">Collect</span><span class="p">(</span><span class="nx">uncheckedMetricChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="k">default</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span>
+</span></span><span class="line"><span class="cl">   <span class="p">}</span>
+</span></span><span class="line"><span class="cl">   <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="k">go</span> <span class="nf">collectWorker</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">goroutineBudget</span><span class="o">--</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="c1">// MetricChan释放channel
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">close</span><span class="p">(</span><span class="nx">checkedMetricChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">close</span><span class="p">(</span><span class="nx">uncheckedMetricChan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}()</span>
+</span></span><span class="line"><span class="cl"> <span class="k">defer</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">checkedMetricChan</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="k">for</span> <span class="k">range</span> <span class="nx">checkedMetricChan</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">uncheckedMetricChan</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="k">for</span> <span class="k">range</span> <span class="nx">uncheckedMetricChan</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 在这段代码中，checkedMetricChan 被复制到 cmc 变量是为了在 select 语句中可以将其设置为 nil。在 Go 的 select 语句中，如果一个 case 对应的通道为 nil，那么这个 case 就会被忽略。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span> <span class="nx">cmc</span> <span class="o">:=</span> <span class="nx">checkedMetricChan</span>
+</span></span><span class="line"><span class="cl"> <span class="nx">umc</span> <span class="o">:=</span> <span class="nx">uncheckedMetricChan</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="k">for</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nx">metric</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">cmc</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">cmc</span> <span class="p">=</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">        <span class="k">break</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">   <span class="o">...</span> <span class="c1">// 对metrics进行检查，确保指标的有效性和一致性。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">case</span> <span class="nx">metric</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">umc</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">   <span class="o">...</span>
+</span></span><span class="line"><span class="cl">  <span class="k">default</span><span class="p">:</span> <span class="c1">// collecter 收集指标速度慢，启动更多 goroutine
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>   <span class="c1">// 所有 collector 都已经 collect 完毕，或者 goroutineBudget 用完
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>   <span class="k">if</span> <span class="nx">goroutineBudget</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="o">||</span> <span class="nb">len</span><span class="p">(</span><span class="nx">checkedCollectors</span><span class="p">)</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="nx">uncheckedCollectors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nx">metric</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">cmc</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">     <span class="o">...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nx">metric</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">umc</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">     <span class="o">...</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">break</span>
+</span></span><span class="line"><span class="cl">   <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">   <span class="c1">// 还有 collector 未 collect，启动更多 goroutine 处理
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>   <span class="k">go</span> <span class="nf">collectWorker</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">   <span class="nx">goroutineBudget</span><span class="o">--</span>
+</span></span><span class="line"><span class="cl">   <span class="nx">runtime</span><span class="p">.</span><span class="nf">Gosched</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="nx">internal</span><span class="p">.</span><span class="nf">NormalizeMetricFamilies</span><span class="p">(</span><span class="nx">metricFamiliesByName</span><span class="p">),</span> <span class="nx">errs</span><span class="p">.</span><span class="nf">MaybeUnwrap</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="使用自己定义的register">使用自己定义的Register</h1>
+<p>根据[前文](#注册指标收集器 Collector)源码解析，如果 default registry 无法满足需求，有两种方式自定义 registry：</p>
+<ol>
+<li>
+<p>需要 <code>promhttp_metric_handler_requests_total</code> 和 <code>promhttp_metric_handler_requests_in_flight</code> 指标</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">reg</span> <span class="o">:=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">NewRegistry</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nx">reg</span><span class="p">.</span><span class="nf">MustRegister</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span> <span class="c1">// 注册自己的collector
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">h</span> <span class="o">:=</span> <span class="nx">promhttp</span><span class="p">.</span><span class="nf">InstrumentMetricHandler</span><span class="p">(</span><span class="nx">reg</span><span class="p">,</span> <span class="nx">promhttp</span><span class="p">.</span><span class="nf">HandlerFor</span><span class="p">(</span><span class="nx">reg</span><span class="p">,</span> <span class="nx">promhttp</span><span class="p">.</span><span class="nx">HandlerOpts</span><span class="p">{}))</span>
+</span></span><span class="line"><span class="cl"><span class="nx">http</span><span class="p">.</span><span class="nf">Handle</span><span class="p">(</span><span class="s">&#34;/metrics&#34;</span><span class="p">,</span> <span class="nx">h</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>不需要仪表化指标</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">reg</span> <span class="o">:=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">NewRegistry</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nx">reg</span><span class="p">.</span><span class="nf">MustRegister</span><span class="p">(</span><span class="nx">otherCollector</span><span class="p">)</span> <span class="c1">// 注册自己的collector
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">h</span> <span class="o">:=</span> <span class="nx">promhttp</span><span class="p">.</span><span class="nf">HandlerFor</span><span class="p">(</span><span class="nx">reg</span><span class="p">,</span> <span class="nx">promhttp</span><span class="p">.</span><span class="nx">HandlerOpts</span><span class="p">{})</span>
+</span></span><span class="line"><span class="cl"><span class="nx">http</span><span class="p">.</span><span class="nf">Handle</span><span class="p">(</span><span class="s">&#34;/metrics&#34;</span><span class="p">,</span> <span class="nx">h</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ol>
+<h1 id="参考">参考</h1>
+<p><a href="https://prometheus.io/docs/instrumenting/clientlibs/">官方仪表化库</a></p>
+<p><a href="https://prometheus.io/docs/instrumenting/exposition_formats/">Prometheus指标格式</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2024-04-04
+        <a href="/commit/fe18952f4778f7af5d2d20b8f1a4220de3dec134" title="pod restart questions">(fe18952)</a>
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/prometheus/">Prometheus</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/pod%E9%87%8D%E5%90%AF%E7%9B%B8%E5%85%B3%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">pod重启相关问题汇总</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/vmagent%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8Fvmagnet%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E5%90%84%E8%8A%82%E7%82%B9%E4%B9%8B%E9%97%B4%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8Dtarget/">
+            <span class="next-text nav-default">vmagnet集群模式详解</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

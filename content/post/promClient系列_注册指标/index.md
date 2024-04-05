@@ -1,12 +1,12 @@
 ---
-title: "Prometheus仪表化源码解析：指标如何被注册和采集"
+title: "Prometheus指标注册与采集过程源码解析"
 date: 2024-03-24T16:14:34+08:00
 lastmod: 2024-03-24T16:14:34+08:00
-draft: true
+draft: false
 keywords: []
 description: ""
-tags: []
-categories: []
+tags: ["Prometheus"]
+categories: ["技术"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -48,16 +48,18 @@ sequenceDiagrams:
 
 # 从一个简单的例子开始
 
-Prometheus是云原生领域的标准监控工具，被许多知名服务采用。官方提供了多种语言的[仪表化库](https://prometheus.io/docs/instrumenting/clientlibs/)，简化应用的仪表化（Instrument）过程。Prometheus 的指标以文本格式呈现，通过 HTTP 协议暴露指标接口，**`Content-Type`** 为 `text/plain`。
+Prometheus 是云原生领域内的标准监控工具，广泛应用于众多知名服务中。官方提供了多种语言的[仪表化库](https://prometheus.io/docs/instrumenting/clientlibs/)，简化应用的仪表化（Instrument）过程。Prometheus 的指标以文本格式呈现，通过 HTTP 协议暴露指标接口，**`Content-Type`** 为 `text/plain`。
 
-本文从一个简单的仪表化例子开始，介绍仪表化的基本步骤，详细解析指标注册和指标收集。
+本文从一个简单的仪表化例子开始，介绍仪表化的基本步骤，并详细解析指标注册和指标收集。
 
-仪表化过程必要步骤如下：
+以 Go 语言为例，仪表化过程必要步骤如下：
 
 1. 定义指标
 2. 注册指标
 3. 指标埋点
 4. 注册 `http.Handler`
+
+以 `cpu_temperature_celsius` 指标为例，完整代码如下：
 
 ```go
 package main
@@ -90,7 +92,7 @@ func main() {
 }
 ```
 
-Prometheus 有四种指标类型。上面的例子定义了一个 Gauge 指标，用于表示 CPU 温度。更多指标解析将在后续文章中介绍。定义完指标后，将其注册到仪表库提供的注册器（Register）中，完成仪表化准备。我们需要在适当位置获取CPU温度并提供给指标，最后通过HTTP接口暴露指标。访问`http://localhost:8080/metrics` 输出如下：
+Prometheus 有四种指标类型。上面的例子定义了一个 Gauge 指标，用于表示 CPU 温度。定义完指标后，将其注册到仪表库提供的注册器（Register）中，完成仪表化准备。我们需要在适当位置获取CPU温度并提供给指标，最后通过HTTP接口暴露指标。访问`http://localhost:8080/metrics` 输出如下：
 
 ```text
 # HELP cpu_temperature_celsius Current temperature of the CPU.
@@ -108,9 +110,9 @@ promhttp_metric_handler_requests_total{code="503"} 0
 
 上述就是仪表化应用的过程，接下来我们解析这一切的背后到底发生了什么。
 
-# 注册指标
+# 指标如何被注册
 
-注册指标实际上是注册一个指标收集器（Collector），收集器在仪表库作为一个接口存在，`NewGauge` 函数实际上是创建了一个 Gauge 类型指标的一个收集器。涉及的步骤包括创建、注册和暴露接口。对应例子中的代码为：
+注册指标的过程如下：
 
 ```mermaid
 graph LR
@@ -118,27 +120,11 @@ graph LR
  B --> C[promhttp.Handler]
 ```
 
-对应例子中的代码：
+## 创建一个 Collector
+
+首先，`NewGauge` 创建一个 Gauge 指标，同时也创建了一个 `Collector`。
 
 ```go
-prometheus.MustRegister(cpuTemp)
-prometheus.NewGauge(...)
-http.Handle("/metrics", promhttp.Handler())
-```
-
-对应源码：
-
-```go
-func MustRegister(cs ...Collector) {
- DefaultRegisterer.MustRegister(cs...)
-}
-
-var (
- defaultRegistry              = NewRegistry()
- DefaultRegisterer Registerer = defaultRegistry
- DefaultGatherer   Gatherer   = defaultRegistry
-)
-
 func NewGauge(opts GaugeOpts) Gauge {
  desc := NewDesc(
   BuildFQName(opts.Namespace, opts.Subsystem, opts.Name),
@@ -151,18 +137,51 @@ func NewGauge(opts GaugeOpts) Gauge {
  return result
 }
 
-
+// Gauge 是一个实现了 Collector 的接口
 type Gauge interface {
- Metric
- Collector
- ...
+	Metric
+	Collector
+  ...
 }
 
+// Collector 接口，用来收集 Metric
+type Collector interface {
+	Describe(chan<- *Desc)
+	Collect(chan<- Metric)
+}
 ```
 
-`MustRegister` 调用了默认注册器 `DefaultRegisterer` 的注册函数，这种编码方式在 Go语言中很常见。我们还看到 `NewGauge` 创建了一个 `Gauge`，而 `Gauge` 是一个嵌套了 `Collector` 的接口。
+Prometheus 原生有四种指标类型，分别是 Counter、Gauge、Histogram 和 Summary。这四种指标类型都实现了 `Collector` 接口。`Collector` 接口定义了两个方法：`Describe` 和 `Collect`。`Describe` 方法用于描述指标，`Collect` 方法用于收集指标。如果我们使用原生的指标类型，并且使用 `NewXXX` 函数创建指标，那么我们默认就创建了一个 `Collector`。
 
-注册器结构题是后续收集指标的核心，其实现了 `Collector`、`Gather` 和 `Registerer` 三个接口，其中最重要的是 `Gatherer` 接口。
+## 创建一个 Register
+
+注册指标被定义在 `Registerer` 接口中，其中 `Register(Collector)` 方法表明其并不是注册指标本身，而是注册一个收集器（`Collector`）。
+
+```go
+type Registerer interface {
+	Register(Collector) error
+	MustRegister(...Collector)
+	Unregister(Collector) bool
+}
+```
+
+例子中我们并未显性创建 `Registry`，而是直接调用 `prometheus.MustRegister(cpuTemp)` 注册指标，这是因为 `MustRegister` 函数调用了默认注册器 `DefaultRegisterer` 的注册函数。`DefaultRegisterer` 是一个全局变量，其默认值是 `DefaultRegisterer = defaultRegistry`。`defaultRegistry` 是一个 `Registry` 结构体，实现了 `Registerer` 接口。
+
+```go
+func MustRegister(cs ...Collector) {
+ DefaultRegisterer.MustRegister(cs...)
+}
+
+var (
+ defaultRegistry              = NewRegistry()
+ DefaultRegisterer Registerer = defaultRegistry
+ DefaultGatherer   Gatherer   = defaultRegistry
+)
+```
+
+## 将 Collector 注册到 Register
+
+`Registry` 结构体是后续收集指标的核心，其实现了 `Collector`、`Gather` 和 `Registerer` 三个接口，其中最重要的是 `Gatherer` 接口。
 
 ```mermaid
 classDiagram
@@ -195,7 +214,7 @@ classDiagram
  Gatherer <|.. Resigtry
 ```
 
-这里补充一个小知识帮助区分 `Gatherer` 和 `Collector` 接口。英文中 "collect" 和 "gather" 两个单词都有收集的意思，细微的分别在于 "collect" 通常涉及收集一组或同一个集合其中的一部分，而 gather 指从不同的来源汇聚到一起。`Collector` 用于收集一系列具有相同目的指标，如 Prometheus 中的一个指标，可以有不同的标签，但指标名不变。而 `Gatherer` 接口用于汇聚多个不同的 `Collector`，即收集不同名称的指标。举例来说，如果只是收集 `CpuTemp` 单个指标的数据，不管是 `CpuTemp{CPU="cpu1"}` 还是 `CpuTemp{CPU="cpu2"}`，都只能算是 "collect"，所以 `CpuTemp` 应该实现 `Collector` 接口。若需同时收集 `CpuTemp` 和 `MemUsage` 等不同指标数据，则属于 "gather"，需要用实现了 `Gatherer` 接口的 `Registgtry`。
+这里补充一个小知识帮助区分 `Gatherer` 和 `Collector` 。两者都是接口，英文中 "collect" 和 "gather" 两个单词都有收集的意思，细微的分别在于 "collect" 通常涉及收集一组或同一个集合其中的一部分，而 gather 指从不同的来源汇聚到一起。`Collector` 用于收集一系列具有相同目的指标，如 Prometheus 中的一个指标，可以有不同的标签，但指标名不变。而 `Gatherer` 接口用于汇聚多个不同的 `Collector`，即收集不同名称的指标。举例来说，如果只是收集 `CpuTemp` 单个指标的数据，不管是 `CpuTemp{CPU="cpu1"}` 还是 `CpuTemp{CPU="cpu2"}`，都只能算是 "collect"，所以 `CpuTemp` 应该实现 `Collector` 接口。若需同时收集 `CpuTemp` 和 `MemUsage` 等不同指标数据，则属于 "gather"，需要用实现了 `Gatherer` 接口的 `Registry`。
 
 让我们仔细看看 `Registry` 结构体的真容，其最核心的字段是 `collectorsByID`，用于储存注册了的 `Collector`。以下是 `Registry` 结构体的部分代码：
 
@@ -224,178 +243,7 @@ type Registry struct {
 }
 ```
 
-# 注册http.Handler
-
-每次访问/metrics时，都会触发一次gather，执行所有collector去收集指标，并进行编码。流程如下：
-
-```mermaid
-graph TD
- A[promhttp.Handler] --> B[InstrumentMetricHandler]
- B --> E[HandlerFor]
- B --> C[InstrumentHandlerCounter]
- C --> D[InstrumentHandlerInFlight]
- E --> F[HandlerForTransactional]
- F --> G[reg.Gather]
- G --> H[enc.Encode]
-```
-
-最终的 `http.Handler`在 `HandlerForTransactional` 中定义
-
-`InstrumentMetricHandler` 完成两件事：仪表化和生成http.Handler
-
-```go
-// promhttp 的入口函数
-func Handler() http.Handler {
- return InstrumentMetricHandler(
-  prometheus.DefaultRegisterer, HandlerFor(prometheus.DefaultGatherer, HandlerOpts{}),
- )
-}
-```
-
-```mermaid
-graph LR
- A --> B
-```
-
-在 `InstrumentMetricHandler` 中定义了两个指标，分别是：
-
-1. `promhttp_metric_handler_requests_total` 已处理的请求总数
-2. `promhttp_metric_handler_requests_in_flight`：处理中的请求数
-
-```go
-func InstrumentMetricHandler(reg prometheus.Registerer, handler http.Handler) http.Handler {
-  
-  // 定义并注册两个指标：
- // 1. promhttp_metric_handler_requests_total：处理的请求总数
- cnt := prometheus.NewCounterVec(
-  prometheus.CounterOpts{
-   Name: "promhttp_metric_handler_requests_total",
-   Help: "Total number of scrapes by HTTP status code.",
-  },
-  []string{"code"},
- )
-  ...
- // 2. promhttp_metric_handler_requests_in_flight：处理中的请求数
- gge := prometheus.NewGauge(prometheus.GaugeOpts{
-  Name: "promhttp_metric_handler_requests_in_flight",
-  Help: "Current number of scrapes being served.",
- })
- ...
- return InstrumentHandlerCounter(..., InstrumentHandlerInFlight(..., handler))
-}
-```
-
-`InstrumentHandlerCounter` 和 `InstrumentHandlerInFlight` 可以看成是两个仪表化代理，具有相似的函数签名，作用是进行指标的埋点工作。：
-
-```go
-func(counter *prometheus.CounterVec, next http.Handler, opts ...Option) http.HandlerFunc
-```
-
-```go
-// promhttp_metric_handler_requests_total
-func InstrumentHandlerCounter(counter *prometheus.CounterVec, next http.Handler, opts ...Option) http.HandlerFunc {
- ...
- return func(w http.ResponseWriter, r *http.Request) {
-  next.ServeHTTP(w, r)
-  ...
- }
-}
-
-// promhttp_metric_handler_requests_in_flight
-func InstrumentHandlerInFlight(g prometheus.Gauge, next http.Handler) http.Handler {
- return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-  g.Inc()
-  defer g.Dec()
-  next.ServeHTTP(w, r)
- })
-}
-
-```
-
-最后在 `HandlerForTransactional` 中定义最终的 `http.Handler` `h`，需要注意的是默认 `h` 是没有设置timeout
-
-```go
-func HandlerFor(reg prometheus.Gatherer, opts HandlerOpts) http.Handler {
- return HandlerForTransactional(prometheus.ToTransactionalGatherer(reg), opts)
-}
-
-func HandlerForTransactional(reg prometheus.TransactionalGatherer, opts HandlerOpts) http.Handler {
- ...  
- // 未设置timeout
- h := http.HandlerFunc(func(rsp http.ResponseWriter, req *http.Request) {
-  ... 
-    // 收集指标
-  mfs, done, err := reg.Gather()
-  ... 
-  w := io.Writer(rsp)
-  ...
-    // 编码指标
-  enc := expfmt.NewEncoder(w, contentType)
-  ...
-  for _, mf := range mfs {
-   if handleError(enc.Encode(mf)) {
-    return
-   }
-  }
-  ...
- })
-
-  // 没有timeout，直接返回h
- if opts.Timeout <= 0 {
-  return h
- }
- // 设置timeout
- return http.TimeoutHandler(h, opts.Timeout, fmt.Sprintf(
-  "Exceeded configured timeout of %v.\n",
-  opts.Timeout,
- ))
-}
-```
-
-```mermaid
-
-```
-
-```go
-
-
-```
-
-`collectorID` 是通过将每个描述符的 ID 进行异或操作得到的。这是一种创建唯一标识符的方法。异或操作有以下特性：
-
-1. 任何数和 0 做异或操作，结果仍然是原来的数。
-2. 任何数和其自身做异或操作，结果是 0。
-3. 异或操作满足交换律和结合律。
-
-因此，无论描述符的 ID 以何种顺序出现，其异或结果（即 `collectorID`）都是一样的。这意味着，只要一个收集器产生的描述符 ID 集合不变，那么计算出的 `collectorID` 就会保持不变，从而可以作为该收集器的唯一标识符。
-
-这种方法的一个优点是，即使在描述符 ID 集合中添加了重复的 ID，`collectorID` 也不会改变，因为任何数和其自身做异或操作的结果是 0。这就是为什么代码中允许在同一个收集器中有重复的描述符，但它们的存在必须是无操作的（no-op）。
-
-```go
-a := 5 // 二进制表示：101
-b := 3 // 二进制表示：011
-c := a ^ b // 二进制表示：110，十进制表示：6
-```
-
-异或操作在编程中有许多常见的应用场景：
-
-1. **交换两个变量的值**：异或操作可以用于交换两个变量的值，而无需使用临时变量。例如：
-
-   a ^= b
-
-   b ^= a
-
-   a ^= b
-
-   在这个例子中，`a` 和 `b` 的值会被交换。
-
-2. **检查奇偶性**：异或操作可以用于检查一个数的奇偶性。如果一个数和 1 进行异或操作，结果仍然是原来的数，那么这个数就是偶数；如果结果是原来的数加 1，那么这个数就是奇数。
-
-3. **找出唯一的元素**：如果一个数组中的所有元素都出现了两次，只有一个元素出现了一次，那么可以通过异或操作找出这个元素。因为任何数和其自身做异或操作的结果是 0，所以数组中出现两次的元素在异或操作后会变成 0，只剩下出现一次的元素。
-
-4. **加密和解密**：异或操作也可以用于简单的加密和解密。如果一个字符和一个密钥进行异或操作，就可以得到加密后的字符；如果加密后的字符再和同一个密钥进行异或操作，就可以得到原来的字符。这是因为任何数和其自身做异或操作的结果是 0，所以原来的字符和加密后的字符做异或操作的结果是密钥。
-
-以上就是异或操作在编程中的一些常见应用场景。
+`Registry` 中的 `Register(c Collector)` 方法会把需要注册的 `Collector` 写入 `Registry` 相关属性。
 
 ```go
 func (r *Registry) Register(c Collector) error {
@@ -442,95 +290,151 @@ func (r *Registry) Register(c Collector) error {
 }
 ```
 
-借鉴意义：
+其中`collectorID` 是通过将所有描述符ID（`desc.id`） 进行异或操作得到的。这是一种创建唯一标识符的方法。异或操作（XOR）当两个比较位（bit）相同，结果为0，当两个比较位不同，结果为1：
 
-1. channel赋值nil跳过case
-2. 合适的时机增加goroutine‘
-3. close channel 后，为了防止内存泄漏，需要defer 把 channel 排空
+1. 任何数和 0 做异或操作，结果仍然是原来的数。
+2. 任何数和其自身做异或操作，结果是 0。
+3. 异或操作满足交换律和结合律。
 
-将已关闭的通道设置为﻿nil可以从﻿select语句中移除这个分支，因为对﻿nil通道的操作会被永久阻塞。这降低了每次﻿select调用的开销，提高了效率。
+因此，无论描述符的 ID 以何种顺序出现，其异或结果（即 `collectorID`）都是一样的。这意味着，只要一个收集器产生的描述符 ID 集合不变，那么计算出的 `collectorID` 就会保持不变，从而可以作为该收集器的唯一标识符。
+
+# 拉取指标的过程
+
+每次通过 `/metrics` 拉取指标，都会触发一次 `gather`，执行所有 `Collector` 去收集指标。流程如下：
+
+```mermaid
+graph TD
+ A[promhttp.Handler] --> B[InstrumentMetricHandler]
+ B --> E[HandlerFor]
+ B --> C[InstrumentHandlerCounter]
+ C --> D[InstrumentHandlerInFlight]
+ E --> F[HandlerForTransactional]
+ F --> G[reg.Gather]
+ G --> H[enc.Encode]
+```
+
+其中 `InstrumentXXX` 函数用于仪表化 /metrics 接口，HandlerFor 函数用于生成 http.Handler。
 
 ```go
-cmc := checkedMetricChan
+// promhttp 的入口函数
+func Handler() http.Handler {
+ return InstrumentMetricHandler(
+  prometheus.DefaultRegisterer, HandlerFor(prometheus.DefaultGatherer, HandlerOpts{}),
+ )
+}
+```
 
-umc := uncheckedMetricChan
+## 仪表化http.Handler
 
-...
+```mermaid
+graph LR
+	A[InstrumentMetricHandler] --> B[InstrumentHandlerCounter]
+	B --> C[InstrumentHandlerInFlight]
+```
 
-case metric, ok := <-cmc:
+`InstrumentMetricHandler` 中定义了两个指标，分别是：
 
-  if !ok {
+1. `promhttp_metric_handler_requests_total` 已处理的请求总数
+2. `promhttp_metric_handler_requests_in_flight`：处理中的请求数
 
-​    cmc = nil
+```go
+func InstrumentMetricHandler(reg prometheus.Registerer, handler http.Handler) http.Handler {
+  
+  // 定义并注册两个指标：
+ // 1. promhttp_metric_handler_requests_total：处理的请求总数
+ cnt := prometheus.NewCounterVec(
+  prometheus.CounterOpts{
+   Name: "promhttp_metric_handler_requests_total",
+   Help: "Total number of scrapes by HTTP status code.",
+  },
+  []string{"code"},
+ )
+  ...
+ // 2. promhttp_metric_handler_requests_in_flight：处理中的请求数
+ gge := prometheus.NewGauge(prometheus.GaugeOpts{
+  Name: "promhttp_metric_handler_requests_in_flight",
+  Help: "Current number of scrapes being served.",
+ })
+ ...
+ return InstrumentHandlerCounter(..., InstrumentHandlerInFlight(..., handler))
+}
+```
 
-​    break
+`InstrumentHandlerCounter` 和 `InstrumentHandlerInFlight` 可以看成是两个仪表化代理，具有相似的函数签名，作用是进行指标的埋点工作。每当拉取指标的请求到来时，这两个代理会记录并更新上面定义的两个指标。
 
+```go
+// promhttp_metric_handler_requests_total
+func InstrumentHandlerCounter(counter *prometheus.CounterVec, next http.Handler, opts ...Option) http.HandlerFunc {
+ ...
+ return func(w http.ResponseWriter, r *http.Request) {
+  next.ServeHTTP(w, r)
+  ...
+ }
+}
+
+// promhttp_metric_handler_requests_in_flight
+func InstrumentHandlerInFlight(g prometheus.Gauge, next http.Handler) http.Handler {
+ return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  g.Inc()
+  defer g.Dec()
+  next.ServeHTTP(w, r)
+ })
+}
+
+```
+
+## 收集指标
+
+真正触发 gather 是在 `HandlerForTransactional` 中。其中定义的 `http.Handler` `h` 会收集所有指标并编码，需要注意的是默认 `http.Handler` 是没有设置timeout，所以最好在采集指标的client端设置timeout。
+
+```go
+func HandlerFor(reg prometheus.Gatherer, opts HandlerOpts) http.Handler {
+ return HandlerForTransactional(prometheus.ToTransactionalGatherer(reg), opts)
+}
+
+func HandlerForTransactional(reg prometheus.TransactionalGatherer, opts HandlerOpts) http.Handler {
+ ...  
+ // 未设置timeout
+ h := http.HandlerFunc(func(rsp http.ResponseWriter, req *http.Request) {
+  ... 
+    // 收集指标
+  mfs, done, err := reg.Gather()
+  ... 
+  w := io.Writer(rsp)
+  ...
+    // 编码指标
+  enc := expfmt.NewEncoder(w, contentType)
+  ...
+  for _, mf := range mfs {
+   if handleError(enc.Encode(mf)) {
+    return
+   }
   }
+  ...
+ })
 
-...
-
-case metric, ok := <-umc:
-
-  if !ok {
-
-​    umc = nil
-
-​    break
-
-  }
+  // 没有timeout，直接返回h
+ if opts.Timeout <= 0 {
+  return h
+ }
+ // 设置timeout
+ return http.TimeoutHandler(h, opts.Timeout, fmt.Sprintf(
+  "Exceeded configured timeout of %v.\n",
+  opts.Timeout,
+ ))
+}
 ```
 
-**5.** **清晰的资源管理和退出策略**
-
-​ • 使用﻿defer语句来确保资源被适当清理，无论函数是正常结束还是提前返回。
-
-​ • 使用﻿nil来标记已关闭的channel，避免在﻿select中重复选择已关闭的channel。
-
-```go
-defer func() {
-
-  for range checkedMetricChan {}
-
-  for range uncheckedMetricChan {}
-
-}()
-```
-
-使用﻿MultiError类型来收集并处理多个goroutine产生的错误。
-
-```go
-errs.Append(processMetric(/*...*/))
-```
-
-根据待处理的收集器数量动态调整goroutine的数量，可以有效利用资源，避免创建过多的goroutine导致的资源浪费或竞争。
-
-```go
-goroutineBudget := len(r.collectorsByID) + len(r.uncheckedCollectors)
-
-...
-
-go collectWorker()
-
-goroutineBudget--
-
-...
-
-go func() {
-
-  wg.Wait()
-
-  close(checkedMetricChan)
-
-  close(uncheckedMetricChan)
-
-}()
-```
+在 `registry.Gather` 中，Registry 会把已经注册的所有 `Collector` 放入 `checkedCollectors` 和 `uncheckedCollectors` 两个 channel 中，然后启动多个 goroutine 去收集指标。goroutine 的总数由 `goroutineBudget` 控制，`collectWorker` 函数会不断从 `checkedCollectors` 和 `uncheckedCollectors` 中取出 `Collector` 去收集指标，并把收集的指标存入 `checkedMetricChan` 和 `uncheckedMetricChan`。
+collectWorker 为 `checkedMetricChan` 和 `uncheckedMetricChan` 的生产者，`checkedCollectors` 和 `uncheckedCollectors` 的消费者。`checkedMetricChan` 和 `uncheckedMetricChan` 会被消费者消费完后关闭，以此来通知生产者停止生产。
 
 ```mermaid
 graph LR
  A[collectWorker] -->|checkedMetricChan| B[case metric, ok := <-cmc:]
  A -->|uncheckedMetricChan| C[case metric, ok := <-umc]
 ```
+
+
 
 ```go
 func (r *Registry) Gather() ([]*dto.MetricFamily, error) {
@@ -575,7 +479,7 @@ func (r *Registry) Gather() ([]*dto.MetricFamily, error) {
  go collectWorker()
  goroutineBudget--
 
- // 释放channel
+ // MetricChan释放channel
  go func() {
   wg.Wait()
   close(checkedMetricChan)
@@ -629,25 +533,30 @@ func (r *Registry) Gather() ([]*dto.MetricFamily, error) {
 }
 ```
 
+
+
+
+
 # 使用自己定义的Register
 
-根据[前文](#注册指标收集器 Collector)源码解析，有两种方式自定义register：
+根据[前文](#注册指标收集器 Collector)源码解析，如果 default registry 无法满足需求，有两种方式自定义 registry：
 
 1. 需要 `promhttp_metric_handler_requests_total` 和 `promhttp_metric_handler_requests_in_flight` 指标
 
    ```go
    reg := prometheus.NewRegistry()
-   promhttp.InstrumentMetricHandler(reg, HandlerFor(reg, HandlerOpts{}))
+   reg.MustRegister(c) // 注册自己的collector
+   h := promhttp.InstrumentMetricHandler(reg, promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+   http.Handle("/metrics", h)
    ```
 
 2. 不需要仪表化指标
 
    ```go
-   // 创建
    reg := prometheus.NewRegistry()
-   // 
-   reg.MustRegister(otherCollector())
-   http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+   reg.MustRegister(otherCollector) // 注册自己的collector
+   h := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
+   http.Handle("/metrics", h)
    ```
 
 # 参考
