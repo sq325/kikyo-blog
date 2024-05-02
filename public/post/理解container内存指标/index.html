@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>容器内存指标用哪个 - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="容器内存指标来源 容器本质上是 linux 进程，与普通进程不同的是，容器的资源使用受 cgroup 管理，cgroup 是 linux 内核提供的一种资源隔离机制，可以限制进程的资" />
+
+
+
+
+
+
+<link rel="canonical" href="/post/%E7%90%86%E8%A7%A3container%E5%86%85%E5%AD%98%E6%8C%87%E6%A0%87/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="容器内存指标用哪个" />
+<meta property="og:description" content="容器内存指标来源 容器本质上是 linux 进程，与普通进程不同的是，容器的资源使用受 cgroup 管理，cgroup 是 linux 内核提供的一种资源隔离机制，可以限制进程的资" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/post/%E7%90%86%E8%A7%A3container%E5%86%85%E5%AD%98%E6%8C%87%E6%A0%87/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2024-04-11T22:29:41+08:00" />
+<meta property="article:modified_time" content="2024-05-02T23:11:33+08:00" />
+
+<meta itemprop="name" content="容器内存指标用哪个">
+<meta itemprop="description" content="容器内存指标来源 容器本质上是 linux 进程，与普通进程不同的是，容器的资源使用受 cgroup 管理，cgroup 是 linux 内核提供的一种资源隔离机制，可以限制进程的资"><meta itemprop="datePublished" content="2024-04-11T22:29:41+08:00" />
+<meta itemprop="dateModified" content="2024-05-02T23:11:33+08:00" />
+<meta itemprop="wordCount" content="2053">
+<meta itemprop="keywords" content="Prometheus,k8s," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="容器内存指标用哪个"/>
+<meta name="twitter:description" content="容器内存指标来源 容器本质上是 linux 进程，与普通进程不同的是，容器的资源使用受 cgroup 管理，cgroup 是 linux 内核提供的一种资源隔离机制，可以限制进程的资"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">容器内存指标用哪个</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2024-04-11 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 2053 字 </span>
+          <span class="more-meta"> 预计阅读 5 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#容器内存指标来源">容器内存指标来源</a></li>
+    <li><a href="#cadvisor-内存指标">cadvisor 内存指标</a>
+      <ul>
+        <li><a href="#container_memory_usage_bytes">container_memory_usage_bytes</a></li>
+        <li><a href="#container_memory_swap">container_memory_swap</a></li>
+        <li><a href="#container_memory_working_set_bytes">container_memory_working_set_bytes</a></li>
+        <li><a href="#container_memory_cache--container_memory_rss">container_memory_cache &amp; container_memory_rss</a></li>
+        <li><a href="#container_memory_working_set_bytes-or-container_memory_rss">container_memory_working_set_bytes or container_memory_rss？</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <h1 id="容器内存指标来源">容器内存指标来源</h1>
+<p>容器本质上是 linux 进程，与普通进程不同的是，容器的资源使用受 cgroup 管理，cgroup 是 linux 内核提供的一种资源隔离机制，可以限制进程的资源使用。通过 Prometheus 收集的容器内存指标由 cadvisor 采集，cadvisor 是一个开源的容器监控工具，由 google 开发，用于监控容器的资源使用情况。cadvisor 通过读取 cgroup 的内存统计信息，计算出容器的内存使用情况。
+cgroup 内存信息记录在 <code>/sys/fs/cgroup/memory.XXX</code> 文件下，cadvisor 通过读取这些文件获取容器的内存使用情况。
+其中cgroup v1 和 v2 的内存指标文件不同，如下源码所示：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// cgroup v1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">moduleName</span> <span class="o">:=</span> <span class="s">&#34;memory&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">usage</span>    <span class="p">=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.usage_in_bytes&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">maxUsage</span> <span class="p">=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.max_usage_in_bytes&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">failcnt</span>  <span class="p">=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.failcnt&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">limit</span>    <span class="p">=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.limit_in_bytes&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// cgroup v2
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">usage</span> <span class="o">:=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.current&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">limit</span> <span class="o">:=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.max&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">maxUsage</span> <span class="o">:=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.peak&#34;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>下面以cgroup v2 为例，介绍容器内存指标的计算。
+获取内存的主要逻辑实现在 github.com/opencontainers/runc/libcontainer/cgroups/fs2/memory.go 的 statMemory 函数中。该函数通过直接读取 cgroup 文件，获取 memory.stat、usage、swap、cache 内存信息。：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// github.com/opencontainers/runc/libcontainer/cgroups/fs2/memory.go
+</span></span></span><span class="line"><span class="cl"><span class="c1">// statMemory 函数通过读取 cgroup 文件获取各种内存信息
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">statMemory</span><span class="p">(</span><span class="nx">dirPath</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">stats</span> <span class="o">*</span><span class="nx">cgroups</span><span class="p">.</span><span class="nx">Stats</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">const</span> <span class="nx">file</span> <span class="p">=</span> <span class="s">&#34;memory.stat&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">statsFile</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">cgroups</span><span class="p">.</span><span class="nf">OpenFile</span><span class="p">(</span><span class="nx">dirPath</span><span class="p">,</span> <span class="nx">file</span><span class="p">,</span> <span class="nx">os</span><span class="p">.</span><span class="nx">O_RDONLY</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">statsFile</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">sc</span> <span class="o">:=</span> <span class="nx">bufio</span><span class="p">.</span><span class="nf">NewScanner</span><span class="p">(</span><span class="nx">statsFile</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">sc</span><span class="p">.</span><span class="nf">Scan</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">t</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">fscommon</span><span class="p">.</span><span class="nf">ParseKeyValue</span><span class="p">(</span><span class="nx">sc</span><span class="p">.</span><span class="nf">Text</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">		<span class="o">...</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">stats</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="nx">t</span><span class="p">]</span> <span class="p">=</span> <span class="nx">v</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// cache
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">stats</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Cache</span> <span class="p">=</span> <span class="nx">stats</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;file&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">stats</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">UseHierarchy</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// usage
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// 来自 /sys/fs/cgroup/memory.current
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">memoryUsage</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">getMemoryDataV2</span><span class="p">(</span><span class="nx">dirPath</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">stats</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Usage</span> <span class="p">=</span> <span class="nx">memoryUsage</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="c1">// swap
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">swapOnlyUsage</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">getMemoryDataV2</span><span class="p">(</span><span class="nx">dirPath</span><span class="p">,</span> <span class="s">&#34;swap&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">stats</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">SwapOnlyUsage</span> <span class="p">=</span> <span class="nx">swapOnlyUsage</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">swapUsage</span> <span class="o">:=</span> <span class="nx">swapOnlyUsage</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">swapUsage</span><span class="p">.</span><span class="nx">Usage</span> <span class="o">+=</span> <span class="nx">memoryUsage</span><span class="p">.</span><span class="nx">Usage</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">swapUsage</span><span class="p">.</span><span class="nx">Limit</span> <span class="o">!=</span> <span class="nx">math</span><span class="p">.</span><span class="nx">MaxUint64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">swapUsage</span><span class="p">.</span><span class="nx">Limit</span> <span class="o">+=</span> <span class="nx">memoryUsage</span><span class="p">.</span><span class="nx">Limit</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">swapUsage</span><span class="p">.</span><span class="nx">MaxUsage</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">stats</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">SwapUsage</span> <span class="p">=</span> <span class="nx">swapUsage</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>接下来详细解析 cadvisor 是如何计算出各种容器内存指标的。</p>
+<h1 id="cadvisor-内存指标">cadvisor 内存指标</h1>
+<p>cadvisor 提供了以下内存指标：</p>
+<ul>
+<li><code>container_memory_working_set_bytes</code></li>
+<li><code>container_memory_usage_bytes</code></li>
+<li><code>container_memory_rss</code></li>
+<li><code>container_memory_cache</code></li>
+<li><code>container_memory_kernel_usage</code></li>
+<li><code>container_memory_mapped_file</code></li>
+<li><code>container_memory_swap</code></li>
+<li><code>container_memory_max_usage_bytes</code></li>
+</ul>
+<h2 id="container_memory_usage_bytes">container_memory_usage_bytes</h2>
+<p><code>container_memory_usage_bytes</code> 指标值取自 <code>/sys/fs/cgroup/memory.current</code> 文件，源码如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// github.com/opencontainers/runc/libcontainer/cgroups/fs2/memory.go
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">memoryUsage</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">getMemoryDataV2</span><span class="p">(</span><span class="nx">dirPath</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getMemoryDataV2</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">name</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">cgroups</span><span class="p">.</span><span class="nx">MemoryData</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">moduleName</span> <span class="o">:=</span> <span class="s">&#34;memory&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">usage</span> <span class="o">:=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.current&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">limit</span> <span class="o">:=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.max&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">maxUsage</span> <span class="o">:=</span> <span class="nx">moduleName</span> <span class="o">+</span> <span class="s">&#34;.peak&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">value</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">fscommon</span><span class="p">.</span><span class="nf">GetCgroupParamUint</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">usage</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span> 
+</span></span><span class="line"><span class="cl">	<span class="nx">memoryData</span><span class="p">.</span><span class="nx">Usage</span> <span class="p">=</span> <span class="nx">value</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>上述代码表明，<code>container_memory_usage_bytes</code> 指标从 <code>memory.current</code> 文件读取当前容器的内存使用量，这包括了容器的总内存使用量，即容器进程的内存使用加上内核为容器分配的缓存（如文件系统缓存）。这意味着该指标反映的是该 cgroup 下所有被访问的内存页的总量。
+通常不会以 <code>container_memory_usage_bytes</code> 作为监控指标，因为它包含了文件缓存，且k8s的内存资源分配是基于 <code>container_memory_working_set_bytes</code>，<code>container_memory_usage_bytes &gt;= container_memory_working_set_bytes</code>。
+计算公式如：<code>container_memory_usage_bytes = container_memory_rss + container_memory_cache + kernel memory</code></p>
+<h2 id="container_memory_swap">container_memory_swap</h2>
+<p><code>container_memory_swap</code> 表示容器的交换内存使用量，取自 memory.swap.current 文件。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">/sys/fs/cgroup <span class="c1"># cat memory.swap.current</span>
+</span></span><span class="line"><span class="cl"><span class="m">0</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="container_memory_working_set_bytes">container_memory_working_set_bytes</h2>
+<p><code>container_memory_working_set_bytes</code> 是最常使用的内存指标，用于监控容器的内存使用情况，因为 <code>container_memory_working_set_bytes</code> 只包含活跃的内存使用，更能反映容器的实际内存使用情况。
+<code>container_memory_working_set_bytes</code> 的计算公式为：<code>container_memory_working_set_bytes = container_memory_usage_bytes - total_inactive_file</code>
+源码如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">workingSet</span> <span class="o">:=</span> <span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Usage</span> 
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="nx">inactiveFileKeyName</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">workingSet</span> <span class="p">&lt;</span> <span class="nx">v</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="nx">workingSet</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="nx">workingSet</span> <span class="o">-=</span> <span class="nx">v</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">WorkingSet</span> <span class="p">=</span> <span class="nx">workingSet</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中 <code>total_inactive_file</code> 是容器的文件缓存大小，取自 memory.stat 文件中的 inactive_file 值。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">/sys/fs/cgroup <span class="c1"># cat memory.stat |grep -i inactive_file</span>
+</span></span><span class="line"><span class="cl">inactive_file <span class="m">4096</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="container_memory_cache--container_memory_rss">container_memory_cache &amp; container_memory_rss</h2>
+<p>cache 和 rss 的计算逻辑如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Usage</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Usage</span><span class="p">.</span><span class="nx">Usage</span>
+</span></span><span class="line"><span class="cl"><span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">MaxUsage</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Usage</span><span class="p">.</span><span class="nx">MaxUsage</span>
+</span></span><span class="line"><span class="cl"><span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Failcnt</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Usage</span><span class="p">.</span><span class="nx">Failcnt</span>
+</span></span><span class="line"><span class="cl"><span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">KernelUsage</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">KernelUsage</span><span class="p">.</span><span class="nx">Usage</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// cache rss swap mapped_file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">if</span> <span class="nx">cgroups</span><span class="p">.</span><span class="nf">IsCgroup2UnifiedMode</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Cache</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;file&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">RSS</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;anon&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Swap</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">SwapUsage</span><span class="p">.</span><span class="nx">Usage</span> <span class="o">-</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Usage</span><span class="p">.</span><span class="nx">Usage</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">MappedFile</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;file_mapped&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">UseHierarchy</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Cache</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;total_cache&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">RSS</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;total_rss&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Swap</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;total_swap&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">MappedFile</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;total_mapped_file&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Cache</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;cache&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">RSS</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;rss&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">Swap</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;swap&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">MappedFile</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;mapped_file&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// page faults
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">if</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;pgfault&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">ContainerData</span><span class="p">.</span><span class="nx">Pgfault</span> <span class="p">=</span> <span class="nx">v</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">HierarchicalData</span><span class="p">.</span><span class="nx">Pgfault</span> <span class="p">=</span> <span class="nx">v</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">MemoryStats</span><span class="p">.</span><span class="nx">Stats</span><span class="p">[</span><span class="s">&#34;pgmajfault&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">ContainerData</span><span class="p">.</span><span class="nx">Pgmajfault</span> <span class="p">=</span> <span class="nx">v</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ret</span><span class="p">.</span><span class="nx">Memory</span><span class="p">.</span><span class="nx">HierarchicalData</span><span class="p">.</span><span class="nx">Pgmajfault</span> <span class="p">=</span> <span class="nx">v</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中 <code>container_memory_cache</code> 和 <code>container_memory_rss</code> 分别来自 memory.stat 文件中的 file 和 anon 的值。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># cache</span>
+</span></span><span class="line"><span class="cl">/sys/fs/cgroup <span class="c1"># cat memory.stat |grep -i file</span>
+</span></span><span class="line"><span class="cl">file <span class="m">24576</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># rss</span>
+</span></span><span class="line"><span class="cl">/sys/fs/cgroup <span class="c1"># cat memory.stat |grep -i anon</span>
+</span></span><span class="line"><span class="cl">anon <span class="m">561152</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="container_memory_working_set_bytes-or-container_memory_rss">container_memory_working_set_bytes or container_memory_rss？</h2>
+<p>有时候使用 <code>container_memory_rss</code> 可能比 <code>container_memory_working_set_bytes</code> 更合适，因为 <code>container_memory_rss</code> 只包含容器的常驻内存，不包含文件缓存。本人就遇到过部分容器的 <code>container_memory_working_set_bytes</code> 指标已经很高，但是 <code>container_memory_rss</code> 指标很低，发现是日志文件缓存占用了大量内存，但是文件缓存在内存不足时会被释放，<code>container_memory_working_set_bytes</code> 指标也会随之下降，对程序本身的使用没有影响，所以本人认为在这种情况下 <code>container_memory_working_set_bytes</code> 并不能真正反映内存压力，因为还有很多可以释放的内存可供容器使用。
+而 <code>container_memory_rss</code> 表示容器所有运行中的代码和数据段所占用的内存，这包括容器正在使用的实际物理内存，不包括文件缓存、交换分区或未使用的内存等，是与文件缓存无关的内存使用情况。当 <code>container_memory_rss</code> 高时，表示程序本身占用的内存多，这些内存都是不可释放的。
+**至于为什么k8s使用 <code>container_memory_working_set_bytes</code> 作为pod调度时资源使用的依据，而不是 <code>container_memory_rss</code> ？**在<a href="https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/node-pressure-eviction/#active-file-%E5%86%85%E5%AD%98%E6%9C%AA%E8%A2%AB%E8%A7%86%E4%B8%BA%E5%8F%AF%E7%94%A8%E5%86%85%E5%AD%98">k8s官方文档</a>中有这样一段说明：</p>
+<blockquote>
+<p>kubelet 将 active_file 内存区域视为不可回收。 对于大量使用块设备形式的本地存储（包括临时本地存储）的工作负载， 文件和块数据的内核级缓存意味着许多最近访问的缓存页面可能被计为 active_file。 如果这些内核块缓冲区中在活动 LRU 列表上有足够多， kubelet 很容易将其视为资源用量过量并为节点设置内存压力污点，从而触发 Pod 驱逐。你可以通过为可能执行 I/O 密集型活动的容器设置相同的内存限制和内存请求来应对该行为。</p>
+</blockquote>
+<p>这一点在 <a href="https://github.com/kubernetes/kubernetes/issues/43916">kubernetes github issue</a> 中有详细讨论，官方至今并没有更改。</p>
+<h1 id="参考">参考</h1>
+<p><a href="https://github.com/kubernetes/kubernetes/issues/43916">kubelet counts active page cache against memory.available</a></p>
+<p><a href="https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/node-pressure-eviction/#active-file-%E5%86%85%E5%AD%98%E6%9C%AA%E8%A2%AB%E8%A7%86%E4%B8%BA%E5%8F%AF%E7%94%A8%E5%86%85%E5%AD%98">active_file 内存未被视为可用内存</a></p>
+<p><a href="https://cloud.tencent.com/developer/article/2070537">K8S内存消耗，到底该看哪个图？</a></p>
+<p><a href="https://www.cnblogs.com/mikevictor07/p/17968696">记一次go应用在k8s pod已用内存告警不准确分析</a></p>
+<p><a href="https://www.orchome.com/6745">Cadvisor内存使用率指标</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2024-05-02
+        <a href="/commit/d9cc68cd35f73d1f378723f872d2e8bc2aa4a4dc" title="container memory">(d9cc68c)</a>
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/prometheus/">Prometheus</a>
+          <a href="/tags/k8s/">k8s</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/pod%E9%87%8D%E5%90%AF%E7%9B%B8%E5%85%B3%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/">
+            <span class="next-text nav-default">pod重启相关问题汇总</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>
