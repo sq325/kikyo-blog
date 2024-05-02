@@ -1,5 +1,5 @@
 ---
-title: "liveness探针原理"
+title: "liveness exec 探针原理"
 date: 2024-04-04T20:09:22+08:00
 lastmod: 2024-04-04T20:09:22+08:00
 draft: true
@@ -64,6 +64,53 @@ spec:
 
 pod的重启逻辑是在kubelet中实现的，kubelet会定期检查pod的状态，如果发现pod的状态不正常，就会根据pod.spec.restartPolicy的设置来决定是否重启pod。源码如下：
 
+
+
+exec
+
+```mermaid
+graph TD
+	b[kubelet.SyncPod] --> a
+	a[probeManager.AddPod] --> A
+	A[worker.doProbe] --> B[prober.probe]
+	B --> C[prober.runProbeWithRetries]
+	C --> D[prober.runProbe]
+	D --> E[prober.exec.Probe]
+	E --> F[execProber.Probe]
+	F -->|执行Cmd| G[cmdWrapper.Start]
+	G --> I[execInContainer.Start]
+	D --> H[prober.newExecInContainer]
+	H -->|生成Cmd| G
+	I --> J[CommandRunner.RunInContainer]
+	J --> K[remoteRuntimeService.ExecSync]
+	K --> L[remoteRuntimeService.execSyncV1]
+	L --> M[runtimeClient.ExecSync]
+	M --> N[runtimeServiceClient]
+	N --> O[grpc.ClientConn.Invoke]
+	O --> P[ /runtime.v1.RuntimeService/ExecSync ]
+	
+```
+
+
+
+
+
+containerd
+
+```mermaid
+graph TD
+	A[criService.ExecSync] --> B[criService.execInContainer]
+	B --> C[criService.execInternal]
+	C --> D[task.Exec]
+	D --> E[tasksClient.Exec]
+```
+
+
+
+
+
+
+
 # 检测探针结果
 
 ```go
@@ -117,9 +164,7 @@ const (
 )
 ```
 
-```go
 
-```
 
 ```go
 func (w *worker) doProbe(ctx context.Context) (keepGoing bool) {
