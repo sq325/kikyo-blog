@@ -6,19 +6,19 @@
     <description>Recent content in Tags on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 02 May 2024 23:11:33 +0800</lastBuildDate>
+    <lastBuildDate>Mon, 13 May 2024 10:31:28 +0800</lastBuildDate>
     <atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>K8s</title>
       <link>/tags/k8s/</link>
-      <pubDate>Thu, 11 Apr 2024 22:29:41 +0800</pubDate>
+      <pubDate>Fri, 03 May 2024 14:31:28 +0800</pubDate>
       <guid>/tags/k8s/</guid>
       <description></description>
     </item>
     <item>
       <title>Prometheus</title>
       <link>/tags/prometheus/</link>
-      <pubDate>Thu, 11 Apr 2024 22:29:41 +0800</pubDate>
+      <pubDate>Thu, 02 May 2024 22:29:41 +0800</pubDate>
       <guid>/tags/prometheus/</guid>
       <description></description>
     </item>
