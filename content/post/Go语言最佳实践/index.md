@@ -1,12 +1,12 @@
 ---
-title: "learn from source"
-date: 2024-04-06T20:01:58+08:00
-lastmod: 2024-04-06T20:01:58+08:00
+title: "Go语言最佳实践"
+date: 2024-06-15T11:38:44+08:00
+lastmod: 2024-06-15T11:38:44+08:00
 draft: true
 keywords: []
 description: ""
-tags: []
-categories: []
+tags: ["Golang"]
+categories: ["技术"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -41,3 +41,5 @@ sequenceDiagrams:
 ---
 
 <!--more-->
+
+

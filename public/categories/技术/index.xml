@@ -6,8 +6,15 @@
     <description>Recent content in 技术 on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Mon, 13 May 2024 10:31:28 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 16 Jun 2024 23:42:40 +0800</lastBuildDate>
     <atom:link href="/categories/%E6%8A%80%E6%9C%AF/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Prometheus Client系列：如何获取指标值</title>
+      <link>/post/promclient%E7%B3%BB%E5%88%97_%E6%8A%8Aprom%E6%8C%87%E6%A0%87%E8%BD%AC%E5%8C%96%E4%B8%BA/</link>
+      <pubDate>Tue, 11 Jun 2024 23:42:40 +0800</pubDate>
+      <guid>/post/promclient%E7%B3%BB%E5%88%97_%E6%8A%8Aprom%E6%8C%87%E6%A0%87%E8%BD%AC%E5%8C%96%E4%B8%BA/</guid>
+      <description>最近在工作中有一个需求，需要将 Prometheus 指标以指定格式输出为文本。常规使用 go-client 库开发的指标会以 /metrics 接口暴露，格式是 Prometheus 指标标准的文本格式，但如果我想在开发</description>
+    </item>
     <item>
       <title>kubectl rollout 原理解析</title>
       <link>/post/kubectl_rollout/</link>
@@ -30,7 +37,7 @@
       <description>多容器 Pod 重启策略 问题一：什么情况下整个 Pod 会发生被 Kill（重启） initContainer运行失败，并且 Pod的重启策略是Never 加上 Pod 的</description>
     </item>
     <item>
-      <title>Prometheus指标注册与采集过程源码解析</title>
+      <title>Prometheus Client系列：Prometheus指标注册与采集过程源码解析</title>
       <link>/post/promclient%E7%B3%BB%E5%88%97_%E6%B3%A8%E5%86%8C%E6%8C%87%E6%A0%87/</link>
       <pubDate>Sun, 24 Mar 2024 16:14:34 +0800</pubDate>
       <guid>/post/promclient%E7%B3%BB%E5%88%97_%E6%B3%A8%E5%86%8C%E6%8C%87%E6%A0%87/</guid>

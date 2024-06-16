@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Prometheus Client系列：如何获取指标值 - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="最近在工作中有一个需求，需要将 Prometheus 指标以指定格式输出为文本。常规使用 go-client 库开发的指标会以 /metrics 接口暴露，格式是 Prometheus 指标标准的文本格式，但如果我想在开发" />
+
+
+
+
+
+
+<link rel="canonical" href="/post/promclient%E7%B3%BB%E5%88%97_%E6%8A%8Aprom%E6%8C%87%E6%A0%87%E8%BD%AC%E5%8C%96%E4%B8%BA/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Prometheus Client系列：如何获取指标值" />
+<meta property="og:description" content="最近在工作中有一个需求，需要将 Prometheus 指标以指定格式输出为文本。常规使用 go-client 库开发的指标会以 /metrics 接口暴露，格式是 Prometheus 指标标准的文本格式，但如果我想在开发" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/post/promclient%E7%B3%BB%E5%88%97_%E6%8A%8Aprom%E6%8C%87%E6%A0%87%E8%BD%AC%E5%8C%96%E4%B8%BA/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2024-06-11T23:42:40+08:00" />
+<meta property="article:modified_time" content="2024-06-16T23:42:40+08:00" />
+
+<meta itemprop="name" content="Prometheus Client系列：如何获取指标值">
+<meta itemprop="description" content="最近在工作中有一个需求，需要将 Prometheus 指标以指定格式输出为文本。常规使用 go-client 库开发的指标会以 /metrics 接口暴露，格式是 Prometheus 指标标准的文本格式，但如果我想在开发"><meta itemprop="datePublished" content="2024-06-11T23:42:40+08:00" />
+<meta itemprop="dateModified" content="2024-06-16T23:42:40+08:00" />
+<meta itemprop="wordCount" content="1129">
+<meta itemprop="keywords" content="prometheus," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Prometheus Client系列：如何获取指标值"/>
+<meta name="twitter:description" content="最近在工作中有一个需求，需要将 Prometheus 指标以指定格式输出为文本。常规使用 go-client 库开发的指标会以 /metrics 接口暴露，格式是 Prometheus 指标标准的文本格式，但如果我想在开发"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Prometheus Client系列：如何获取指标值</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2024-06-11 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 1129 字 </span>
+          <span class="more-meta"> 预计阅读 3 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#如何获取指标值">如何获取指标值</a></li>
+    <li><a href="#如何获取向量类型指标值">如何获取向量类型指标值</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>最近在工作中有一个需求，需要将 Prometheus 指标以指定格式输出为文本。常规使用 go-client 库开发的指标会以 /metrics 接口暴露，格式是 <a href="https://prometheus.io/docs/concepts/data_model/">Prometheus 指标标准的文本格式</a>，但如果我想在开发的 Exporter 中以其他格式输出指标，该怎么办呢？其中最主要的困难是如何获取当前指标的值。</p>
+<h1 id="如何获取指标值">如何获取指标值</h1>
+<p>client_golang 中对指标的定义如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Metric</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">Desc</span><span class="p">()</span> <span class="o">*</span><span class="nx">Desc</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">Write</span><span class="p">(</span><span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Metric</span><span class="p">)</span> <span class="kt">error</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Gauge</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Metric</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Collector</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">Set</span><span class="p">(</span><span class="kt">float64</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Inc</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Dec</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Add</span><span class="p">(</span><span class="kt">float64</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Sub</span><span class="p">(</span><span class="kt">float64</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">SetToCurrentTime</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Counter</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Metric</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Collector</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">Inc</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Add</span><span class="p">(</span><span class="kt">float64</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>不管是 Counter 还是 Gauge，都没有实现类似 GetValue() 获取当前值的方法。那么如何获取当前指标的值呢？仔细查阅 client_golang 源码，counter 结构体实现了 <code>get()</code> 方法。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">counter</span><span class="p">)</span> <span class="nf">get</span><span class="p">()</span> <span class="kt">float64</span> <span class="p">{</span><span class="o">...</span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>但是这个方法是私有的，无法直接调用，同时 gauge 没有实现这个方法。那么如何获取当前指标的值呢？
+这就要聊几句 ProtoBuf 了。Prometheus 的指标是通过 ProtoBuf 定义的，client_golang 库中的 <code>Write</code> 方法就是将指标写入到 ProtoBuf 中。那么我们可以通过 <code>Write</code> 方法将指标写入到 ProtoBuf 中，然后再从 ProtoBuf 中获取指标的值。gauge 和 counter 的 Write 方法：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">g</span> <span class="o">*</span><span class="nx">gauge</span><span class="p">)</span> <span class="nf">Write</span><span class="p">(</span><span class="nx">out</span> <span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Metric</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">val</span> <span class="o">:=</span> <span class="nx">math</span><span class="p">.</span><span class="nf">Float64frombits</span><span class="p">(</span><span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadUint64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">g</span><span class="p">.</span><span class="nx">valBits</span><span class="p">))</span> <span class="c1">// 获取 gauge 的 value
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">return</span> <span class="nf">populateMetric</span><span class="p">(</span><span class="nx">GaugeValue</span><span class="p">,</span> <span class="nx">val</span><span class="p">,</span> <span class="nx">g</span><span class="p">.</span><span class="nx">labelPairs</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">out</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">counter</span><span class="p">)</span> <span class="nf">Write</span><span class="p">(</span><span class="nx">out</span> <span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Metric</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">exemplar</span> <span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Exemplar</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">e</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">exemplar</span><span class="p">.</span><span class="nf">Load</span><span class="p">();</span> <span class="nx">e</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">exemplar</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.(</span><span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Exemplar</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">val</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">get</span><span class="p">()</span> <span class="c1">// 获取 counter 的 value
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nf">populateMetric</span><span class="p">(</span><span class="nx">CounterValue</span><span class="p">,</span> <span class="nx">val</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">labelPairs</span><span class="p">,</span> <span class="nx">exemplar</span><span class="p">,</span> <span class="nx">out</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在 Write 方法中果然有把指标值写入到 ProtoBuf 的操作。再看看 <code>populateMetric</code> 函数：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">populateMetric</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">t</span> <span class="nx">ValueType</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">v</span> <span class="kt">float64</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">labelPairs</span> <span class="p">[]</span><span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">LabelPair</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">e</span> <span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Exemplar</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">m</span> <span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Metric</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">m</span><span class="p">.</span><span class="nx">Label</span> <span class="p">=</span> <span class="nx">labelPairs</span>
+</span></span><span class="line"><span class="cl">	<span class="k">switch</span> <span class="nx">t</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">case</span> <span class="nx">CounterValue</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">m</span><span class="p">.</span><span class="nx">Counter</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Counter</span><span class="p">{</span><span class="nx">Value</span><span class="p">:</span> <span class="nx">proto</span><span class="p">.</span><span class="nf">Float64</span><span class="p">(</span><span class="nx">v</span><span class="p">),</span> <span class="nx">Exemplar</span><span class="p">:</span> <span class="nx">e</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">case</span> <span class="nx">GaugeValue</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">m</span><span class="p">.</span><span class="nx">Gauge</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Gauge</span><span class="p">{</span><span class="nx">Value</span><span class="p">:</span> <span class="nx">proto</span><span class="p">.</span><span class="nf">Float64</span><span class="p">(</span><span class="nx">v</span><span class="p">)}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">case</span> <span class="nx">UntypedValue</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">m</span><span class="p">.</span><span class="nx">Untyped</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Untyped</span><span class="p">{</span><span class="nx">Value</span><span class="p">:</span> <span class="nx">proto</span><span class="p">.</span><span class="nf">Float64</span><span class="p">(</span><span class="nx">v</span><span class="p">)}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">default</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;encountered unknown type %v&#34;</span><span class="p">,</span> <span class="nx">t</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>很简单，就是把值写到对应类型的 ProtoBuf 结构中，如 <code>dto.Counter</code> 和 <code>dto.Gauge</code>。幸运的是这两个结构体都有 <code>GetValue()</code> 方法：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">Counter</span><span class="p">)</span> <span class="nf">GetValue</span><span class="p">()</span> <span class="kt">float64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">m</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Value</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="o">*</span><span class="nx">m</span><span class="p">.</span><span class="nx">Value</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">Gauge</span><span class="p">)</span> <span class="nf">GetValue</span><span class="p">()</span> <span class="kt">float64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">m</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Value</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="o">*</span><span class="nx">m</span><span class="p">.</span><span class="nx">Value</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>所以我们只需要新建一个 <code>dto.Metric</code>，再通过 Counter 和 Counter 接口类型的的 Write 方法把指标写入到 <code>dto.Metric</code> 中，然后再通过 <code>dto.Metric</code> 的 <code>Counter</code> 和 <code>Gauge</code> 字段的 <code>GetValue()</code> 方法获取当前指标的值。这样就可以获取到当前指标的值了。<code>dto.Metric</code> 包含了 <code>dto.Gauge</code> 和 <code>dto.Counter</code> ，<code>populateMetric</code> 函数会帮我们判断指标类型并给 <code>dto.Metric</code> 字段赋值。</p>
+<p>这里给出一个例子：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/prometheus/client_golang/prometheus&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">dto</span> <span class="s">&#34;github.com/prometheus/client_model/go&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Metric represents a wrapper for prometheus.Metric
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Metric</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">GetVal</span><span class="p">()</span> <span class="kt">float64</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// implement Metric interface
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">gauge</span> <span class="kd">struct</span><span class="p">{</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Metric</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">counter</span> <span class="kd">struct</span><span class="p">{</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Metric</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// NewMetric returns a Metric interface based on the type of prometheus.Metric
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Only Gauge and Counter are supported
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">NewMetric</span><span class="p">(</span><span class="nx">m</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">Metric</span><span class="p">)</span> <span class="nx">Metric</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">d</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">dto</span><span class="p">.</span><span class="nx">Metric</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">m</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">switch</span> <span class="nx">m</span><span class="p">.(</span><span class="kd">type</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">case</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">Gauge</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">gauge</span><span class="p">{</span><span class="nx">d</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">case</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nx">Counter</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">counter</span><span class="p">{</span><span class="nx">d</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">default</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">g</span> <span class="nx">gauge</span><span class="p">)</span> <span class="nf">GetVal</span><span class="p">()</span> <span class="kt">float64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">g</span><span class="p">.</span><span class="nx">d</span><span class="p">.</span><span class="nf">GetGauge</span><span class="p">().</span><span class="nf">GetValue</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="nx">counter</span><span class="p">)</span> <span class="nf">GetVal</span><span class="p">()</span> <span class="kt">float64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">c</span><span class="p">.</span><span class="nx">d</span><span class="p">.</span><span class="nf">GetCounter</span><span class="p">().</span><span class="nf">GetValue</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="如何获取向量类型指标值">如何获取向量类型指标值</h1>
+<p>解决了单个指标获取值的问题，获取向量指标值的问题就有思路了。向量指标是通过 <code>prometheus.NewCounterVec</code> 和 <code>prometheus.NewGaugeVec</code> 创建的，这两个方法返回的是 <code>CounterVec</code> 和 <code>GaugeVec</code> 类型，这两个类型都有 <code>GetMetricWithLabelValues</code> 方法，签名如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nf">GetMetricWithLabelValues</span><span class="p">(</span><span class="nx">lvs</span> <span class="o">...</span><span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">Metric</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>可以先通过标签值获取指标，再使用上述获取单个指标值的方法获取当前指标的值。
+博主已经把获取单个指标值和向量指标值开源了一个库，<a href="https://github.com/sq325/promTrigger">点击这</a>查看。</p>
+<h1 id="参考">参考</h1>
+<p><a href="https://github.com/sq325/promTrigger">promTrigger</a>
+<a href="https://github.com/prometheus/client_model/blob/a534ba6f2551174b8a7792843b58beebeda5fbd4/go/metrics.pb.go#L255">dto</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2024-06-16
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/prometheus/">prometheus</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/kubectl_rollout/">
+            <span class="next-text nav-default">kubectl rollout 原理解析</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

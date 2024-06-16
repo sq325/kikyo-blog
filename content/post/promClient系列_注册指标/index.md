@@ -1,5 +1,5 @@
 ---
-title: "Prometheus指标注册与采集过程源码解析"
+title: "Prometheus Client系列：Prometheus指标注册与采集过程源码解析"
 date: 2024-03-24T16:14:34+08:00
 lastmod: 2024-03-24T16:14:34+08:00
 draft: false
@@ -434,8 +434,6 @@ graph LR
  A -->|uncheckedMetricChan| C[case metric, ok := <-umc]
 ```
 
-
-
 ```go
 func (r *Registry) Gather() ([]*dto.MetricFamily, error) {
 
@@ -532,10 +530,6 @@ func (r *Registry) Gather() ([]*dto.MetricFamily, error) {
  return internal.NormalizeMetricFamilies(metricFamiliesByName), errs.MaybeUnwrap()
 }
 ```
-
-
-
-
 
 # 使用自己定义的Register
 

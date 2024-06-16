@@ -242,7 +242,7 @@ anon 561152
 
 ## container_memory_working_set_bytes or container_memory_rss？
 
-有时候使用 `container_memory_rss` 可能比 `container_memory_working_set_bytes` 更合适，因为 `container_memory_rss` 只包含容器的常驻内存，不包含文件缓存。本人就遇到过部分容器的 `container_memory_working_set_bytes` 指标已经很高，但是 `container_memory_rss` 指标很低，发现是日志文件缓存占用了大量内存，但是文件缓存在内存不足时会被释放，`container_memory_working_set_bytes` 指标也会随之下降，对程序本身的使用没有影响，所以本人认为在这种情况下 `container_memory_working_set_bytes` 并不能真正反映内存压力，因为还有很多可以释放的内存可供容器使用。
+有时候使用 `container_memory_rss` 可能比 `container_memory_working_set_bytes` 更合适，因为 `container_memory_rss` 只包含容器的常驻内存，不包含文件缓存。博主就遇到过部分容器的 `container_memory_working_set_bytes` 指标已经很高，但是 `container_memory_rss` 指标很低，发现是日志文件缓存占用了大量内存，但是文件缓存在内存不足时会被释放，`container_memory_working_set_bytes` 指标也会随之下降，对程序本身的使用没有影响，所以博主认为在这种情况下 `container_memory_working_set_bytes` 并不能真正反映内存压力，因为还有很多可以释放的内存可供容器使用。
 而 `container_memory_rss` 表示容器所有运行中的代码和数据段所占用的内存，这包括容器正在使用的实际物理内存，不包括文件缓存、交换分区或未使用的内存等，是与文件缓存无关的内存使用情况。当 `container_memory_rss` 高时，表示程序本身占用的内存多，这些内存都是不可释放的。
 **至于为什么k8s使用 `container_memory_working_set_bytes` 作为pod调度时资源使用的依据，而不是 `container_memory_rss` ？**在[k8s官方文档](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/node-pressure-eviction/#active-file-内存未被视为可用内存)中有这样一段说明：
 
