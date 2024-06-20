@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>如何开发一个 Remote Write Sender - kikyo</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="博主最近需要将 Kubernetes 事件（event）指标化并推送到 Prometheus，目的是为了配置事件告警。阿里有一个开源项目（kube-eventer），可以将事件导出到 MongoDB、InfluxDB 和 Kafka 等外部系统，但不支持导出到 Prometheus。因此，博主决定 fork 该项目并自行实现，项目地址：kube-eventer。
+" />
+
+
+
+
+
+
+<link rel="canonical" href="/post/promclient%E7%B3%BB%E5%88%97_remotewritesender%E5%BC%80%E5%8F%91/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="如何开发一个 Remote Write Sender" />
+<meta property="og:description" content="博主最近需要将 Kubernetes 事件（event）指标化并推送到 Prometheus，目的是为了配置事件告警。阿里有一个开源项目（kube-eventer），可以将事件导出到 MongoDB、InfluxDB 和 Kafka 等外部系统，但不支持导出到 Prometheus。因此，博主决定 fork 该项目并自行实现，项目地址：kube-eventer。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/post/promclient%E7%B3%BB%E5%88%97_remotewritesender%E5%BC%80%E5%8F%91/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2024-06-20T16:18:26+08:00" />
+<meta property="article:modified_time" content="2024-06-20T22:18:26+08:00" />
+
+<meta itemprop="name" content="如何开发一个 Remote Write Sender">
+<meta itemprop="description" content="博主最近需要将 Kubernetes 事件（event）指标化并推送到 Prometheus，目的是为了配置事件告警。阿里有一个开源项目（kube-eventer），可以将事件导出到 MongoDB、InfluxDB 和 Kafka 等外部系统，但不支持导出到 Prometheus。因此，博主决定 fork 该项目并自行实现，项目地址：kube-eventer。"><meta itemprop="datePublished" content="2024-06-20T16:18:26+08:00" />
+<meta itemprop="dateModified" content="2024-06-20T22:18:26+08:00" />
+<meta itemprop="wordCount" content="1218">
+<meta itemprop="keywords" content="prometheus," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="如何开发一个 Remote Write Sender"/>
+<meta name="twitter:description" content="博主最近需要将 Kubernetes 事件（event）指标化并推送到 Prometheus，目的是为了配置事件告警。阿里有一个开源项目（kube-eventer），可以将事件导出到 MongoDB、InfluxDB 和 Kafka 等外部系统，但不支持导出到 Prometheus。因此，博主决定 fork 该项目并自行实现，项目地址：kube-eventer。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">kikyo</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">主页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">分类</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">kikyo</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">主页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">分类</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">如何开发一个 Remote Write Sender</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2024-06-20 </span>
+        <div class="post-category">
+            <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
+            </div>
+          <span class="more-meta"> 约 1218 字 </span>
+          <span class="more-meta"> 预计阅读 3 分钟 </span>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#remote-write-介绍">Remote Write 介绍</a>
+      <ul>
+        <li><a href="#remote-write-规范的具体内容">Remote Write 规范的具体内容</a>
+          <ul>
+            <li><a href="#request-header">Request Header</a></li>
+            <li><a href="#request-body">Request Body</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#一个例子">一个例子</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>博主最近需要将 Kubernetes 事件（event）指标化并推送到 Prometheus，目的是为了配置事件告警。阿里有一个开源项目（kube-eventer），可以将事件导出到 MongoDB、InfluxDB 和 Kafka 等外部系统，但不支持导出到 Prometheus。因此，博主决定 fork 该项目并自行实现，项目地址：<a href="https://github.com/sq325/kube-eventer">kube-eventer</a>。</p>
+<h1 id="remote-write-介绍">Remote Write 介绍</h1>
+<p>众所周知 Prometheus 是一个基于 pull 模式获取指标的监控系统，但是在一些场景下，我们需要将指标 push 到 Prometheus，这时候就需要用到 Remote Write 了。
+Remote Write 是 Prometheus 定义的一种规范，用于将指标数据推送到远程存储系统。其协议包含 Sender 和 Receiver 两部分，Sender 负责将指标数据序列化为 Protocol Buffers 格式，使用 Snappy 算法压缩并通过 HTTP 发送给 Receiver。
+<img src="./remoteWrite.png" alt="remote write 流程">
+远程存储系统可以是任何支持 Remote Write Recevier 的系统，最典型的是 Prometheus 自身，通过  <code>--web.enable-remote-write-receiver</code> 标志可以开启 Remote Write 功能，此外还有其他系统，如 InfluxDB、Thanos、VictoriaMetrics 等。</p>
+<p><a href="https://prometheus.io/docs/specs/remote_write_spec/#compatible-senders-and-receivers">兼容 Remote Write 规范的系统</a>：</p>
+<ul>
+<li>Prometheus (as both a &ldquo;sender&rdquo; and a &ldquo;receiver&rdquo;)</li>
+<li>Avalanche (as a &ldquo;sender&rdquo;) - A Load Testing Tool Prometheus - Metrics.</li>
+<li>Cortex (as a &ldquo;receiver&rdquo;)</li>
+<li>Elastic Agent (as a &ldquo;receiver&rdquo;)</li>
+<li>Grafana Agent (as both a &ldquo;sender&rdquo; and a &ldquo;receiver&rdquo;)</li>
+<li>GreptimeDB (as a &ldquo;receiver&rdquo;)</li>
+<li>InfluxData’s Telegraf agent. (as a sender, and as a receiver)</li>
+<li>M3 (as a &ldquo;receiver&rdquo;)</li>
+<li>Mimir (as a &ldquo;receiver&rdquo;)</li>
+<li>OpenTelemetry Collector (as a &ldquo;sender&rdquo; and eventually as a - &ldquo;receiver&rdquo;)</li>
+<li>Thanos (as a &ldquo;receiver&rdquo;)</li>
+<li>Vector (as a &ldquo;sender&rdquo; and a &ldquo;receiver&rdquo;)</li>
+<li>VictoriaMetrics (as a &ldquo;receiver&rdquo;)</li>
+</ul>
+<h2 id="remote-write-规范的具体内容">Remote Write 规范的具体内容</h2>
+<p>Remote Write 基于 HTTP，使用 Protocol Buffers 作为数据格式，数据压缩使用 Snappy。作为 Sender ，需要按照 Remote Write 规范来定义 HTTP Request 的 Header 和 Body。</p>
+<h3 id="request-header">Request Header</h3>
+<p>remote write 规定 HTTP Request Header 包必须含以下字段：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-http" data-lang="http"><span class="line"><span class="cl"><span class="err">Content-Encoding: snappy
+</span></span></span><span class="line"><span class="cl"><span class="err">Content-Type: application/x-protobuf
+</span></span></span><span class="line"><span class="cl"><span class="err">User-Agent: &lt;name &amp; version of the sender&gt;
+</span></span></span><span class="line"><span class="cl"><span class="err">X-Prometheus-Remote-Write-Version: 0.1.0
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="request-body">Request Body</h3>
+<p>Protocol Buffers 定义的 Body（已编译） 如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="n">type</span> <span class="n">WriteRequest</span> <span class="n">struct</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span>	<span class="n">Timeseries</span> <span class="p">[]</span><span class="err">*</span><span class="n">TimeSeries</span>     <span class="err">`</span><span class="n">protobuf</span><span class="o">:</span><span class="s">&#34;bytes,1,rep,name=timeseries,proto3&#34;</span> <span class="n">json</span><span class="o">:</span><span class="s">&#34;timeseries,omitempty&#34;</span><span class="err">`
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="p">}</span><span class="err">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-protobuf" data-lang="protobuf"><span class="line"><span class="cl"><span class="n">type</span> <span class="n">TimeSeries</span> <span class="n">struct</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span>	<span class="n">Labels</span>     <span class="p">[]</span><span class="err">*</span><span class="n">Label</span>     <span class="err">`</span><span class="n">protobuf</span><span class="o">:</span><span class="s">&#34;bytes,1,rep,name=labels,proto3&#34;</span> <span class="n">json</span><span class="o">:</span><span class="s">&#34;labels,omitempty&#34;</span><span class="err">`
+</span></span></span><span class="line"><span class="cl"><span class="err"></span>	<span class="n">Samples</span>    <span class="p">[]</span><span class="err">*</span><span class="n">Sample</span>    <span class="err">`</span><span class="n">protobuf</span><span class="o">:</span><span class="s">&#34;bytes,2,rep,name=samples,proto3&#34;</span> <span class="n">json</span><span class="o">:</span><span class="s">&#34;samples,omitempty&#34;</span><span class="err">`
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="n">type</span> <span class="n">Label</span> <span class="n">struct</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span>	<span class="n">Name</span>  <span class="kt">string</span> <span class="err">`</span><span class="n">protobuf</span><span class="o">:</span><span class="s">&#34;bytes,1,opt,name=name,proto3&#34;</span> <span class="n">json</span><span class="o">:</span><span class="s">&#34;name,omitempty&#34;</span><span class="err">`
+</span></span></span><span class="line"><span class="cl"><span class="err"></span>	<span class="n">Value</span> <span class="kt">string</span> <span class="err">`</span><span class="n">protobuf</span><span class="o">:</span><span class="s">&#34;bytes,2,opt,name=value,proto3&#34;</span> <span class="n">json</span><span class="o">:</span><span class="s">&#34;value,omitempty&#34;</span><span class="err">`
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="p">}</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="n">type</span> <span class="n">Sample</span> <span class="n">struct</span> <span class="p">{</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span>	<span class="n">Value</span> <span class="n">float64</span> <span class="err">`</span><span class="n">protobuf</span><span class="o">:</span><span class="s">&#34;fixed64,1,opt,name=value,proto3&#34;</span> <span class="n">json</span><span class="o">:</span><span class="s">&#34;value,omitempty&#34;</span><span class="err">`
+</span></span></span><span class="line"><span class="cl"><span class="err"></span>	<span class="n">Timestamp</span> <span class="kt">int64</span> <span class="err">`</span><span class="n">protobuf</span><span class="o">:</span><span class="s">&#34;varint,2,opt,name=timestamp,proto3&#34;</span> <span class="n">json</span><span class="o">:</span><span class="s">&#34;timestamp,omitempty&#34;</span><span class="err">`
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="p">}</span><span class="err">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="一个例子">一个例子</h1>
+<p>步骤：</p>
+<ol>
+<li>生成 TimeSeries</li>
+<li>新建 http client</li>
+<li>发送 TimeSeries</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// 生成 TimeSeries
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">NewTimeSeries</span><span class="p">()</span> <span class="p">[]</span><span class="o">*</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">TimeSeries</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">timestamp</span> <span class="kt">int64</span>   <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">UnixMilli</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">metricName</span> <span class="p">=</span> <span class="s">&#34;test_metric&#34;</span> <span class="c1">// 指标名称
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 构建 labels
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kd">var</span> <span class="nx">labels</span> <span class="p">[]</span><span class="o">*</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">Label</span>
+</span></span><span class="line"><span class="cl">	<span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">labels</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">labels</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">Label</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;__name__&#34;</span><span class="p">,</span> <span class="nx">Value</span><span class="p">:</span> <span class="nx">metricName</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">labels</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">labels</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">Label</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;key1&#34;</span><span class="p">,</span> <span class="nx">Value</span><span class="p">:</span> <span class="s">&#34;val1&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">labels</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">labels</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">Label</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;key2&#34;</span><span class="p">,</span> <span class="nx">Value</span><span class="p">:</span> <span class="s">&#34;val2&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 构建samples
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kd">var</span> <span class="nx">samples</span> <span class="p">[]</span><span class="o">*</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">Sample</span>
+</span></span><span class="line"><span class="cl">	<span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">samples</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">samples</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">Sample</span><span class="p">{</span><span class="nx">Value</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nx">Timestamp</span><span class="p">:</span> <span class="nx">timestamp</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 生成TimeSeries
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kd">var</span> <span class="nx">timeseries</span> <span class="p">[]</span><span class="o">*</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">TimeSeries</span>
+</span></span><span class="line"><span class="cl">	<span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">series</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">TimeSeries</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Labels</span><span class="p">:</span> <span class="nx">labels</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Samples</span><span class="p">:</span> <span class="nx">samples</span><span class="p">,</span>		
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">timeseries</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">timeseries</span><span class="p">,</span> <span class="nx">series</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">timeseries</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>http client 代码如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// 封装 http.Client
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Client</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">url</span>    <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">client</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">NewClient</span><span class="p">(</span><span class="nx">url</span> <span class="kt">string</span><span class="p">)</span> <span class="o">*</span><span class="nx">Client</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">dialTimeout</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="mi">5</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span> <span class="c1">// 发送超时 timeout
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">timeout</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span> <span class="c1">// 返回超时 timeout
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">tr</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Transport</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Proxy</span><span class="p">:</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ProxyFromEnvironment</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">DialContext</span><span class="p">:</span> <span class="p">(</span><span class="o">&amp;</span><span class="nx">net</span><span class="p">.</span><span class="nx">Dialer</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Timeout</span><span class="p">:</span> <span class="nx">dialTimeout</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}).</span><span class="nx">DialContext</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ResponseHeaderTimeout</span><span class="p">:</span> <span class="nx">timeout</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">MaxIdleConnsPerHost</span><span class="p">:</span>   <span class="mi">100</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">httpclient</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Transport</span><span class="p">:</span> <span class="nx">tr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">Client</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">url</span><span class="p">:</span>    <span class="nx">url</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">client</span><span class="p">:</span> <span class="nx">httpclient</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Client</span><span class="p">)</span> <span class="nf">Send</span><span class="p">(</span><span class="nx">series</span> <span class="p">[]</span><span class="o">*</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">TimeSeries</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">req</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">prompb</span><span class="p">.</span><span class="nx">WriteRequest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Timeseries</span><span class="p">:</span> <span class="nx">series</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">bys</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">proto</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">req</span><span class="p">)</span> <span class="c1">//编译好 ProtoBuf 文件自动生成 Marshal 函数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;failed to marshal WriteRequest: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">snappy</span><span class="p">.</span><span class="nf">Encode</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nx">bys</span><span class="p">));</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span> <span class="c1">// snappy 算法压缩
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Client</span><span class="p">)</span> <span class="nf">send</span><span class="p">(</span><span class="nx">bys</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">req</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nf">NewRequest</span><span class="p">(</span><span class="s">&#34;POST&#34;</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">url</span><span class="p">,</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">NewReader</span><span class="p">(</span><span class="nx">bys</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;failed to create request: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="c1">// 设置 Remote Writer 规定的 Header 字段
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">req</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Content-Encoding&#34;</span><span class="p">,</span> <span class="s">&#34;snappy&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">req</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Set</span><span class="p">(</span><span class="s">&#34;Content-Type&#34;</span><span class="p">,</span> <span class="s">&#34;application/x-protobuf&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">req</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Set</span><span class="p">(</span><span class="s">&#34;User-Agent&#34;</span><span class="p">,</span> <span class="s">&#34;kube-eventer&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">req</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Set</span><span class="p">(</span><span class="s">&#34;X-Prometheus-Remote-Write-Version&#34;</span><span class="p">,</span> <span class="s">&#34;0.1.0&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 发送
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">client</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">req</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;push data with remote write request got error:&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">,</span> <span class="s">&#34;response body:&#34;</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">bys</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">StatusCode</span> <span class="o">&gt;=</span> <span class="mi">400</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">err</span> <span class="p">=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;push data with remote write request got status code: %v, response body: %s&#34;</span><span class="p">,</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">StatusCode</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">bys</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>一切准备就绪，向 Receiver 发送数据：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">series</span> <span class="o">:=</span> <span class="nf">NewTimeSeries</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">client</span> <span class="o">:=</span> <span class="nf">NewClient</span><span class="p">(</span><span class="s">&#34;http://localhost:9090/api/v1/write&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="nx">series</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;failed to write: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="参考">参考</h1>
+<p><a href="https://prometheus.io/docs/specs/remote_write_spec/">Prometheus Remote-Write Specification</a></p>
+<p><a href="https://github.com/AliyunContainerService/kube-eventer">kube-eventer 原项目</a></p>
+<p><a href="https://github.com/sq325/kube-eventer">kube-eventer with remote write</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content"></span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2024-06-20
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/prometheus/">prometheus</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/promclient%E7%B3%BB%E5%88%97_%E6%8A%8Aprom%E6%8C%87%E6%A0%87%E8%BD%AC%E5%8C%96%E4%B8%BA/">
+            <span class="next-text nav-default">Prometheus Client系列：如何获取指标值</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    power by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2021 - 
+    2024<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

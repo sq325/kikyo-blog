@@ -6,8 +6,15 @@
     <description>Recent content on kikyo</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 16 Jun 2024 23:42:40 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 20 Jun 2024 22:18:26 +0800</lastBuildDate>
     <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>如何开发一个 Remote Write Sender</title>
+      <link>/post/promclient%E7%B3%BB%E5%88%97_remotewritesender%E5%BC%80%E5%8F%91/</link>
+      <pubDate>Thu, 20 Jun 2024 16:18:26 +0800</pubDate>
+      <guid>/post/promclient%E7%B3%BB%E5%88%97_remotewritesender%E5%BC%80%E5%8F%91/</guid>
+      <description>&lt;p&gt;博主最近需要将 Kubernetes 事件（event）指标化并推送到 Prometheus，目的是为了配置事件告警。阿里有一个开源项目（kube-eventer），可以将事件导出到 MongoDB、InfluxDB 和 Kafka 等外部系统，但不支持导出到 Prometheus。因此，博主决定 fork 该项目并自行实现，项目地址：&lt;a href=&#34;https://github.com/sq325/kube-eventer&#34;&gt;kube-eventer&lt;/a&gt;。&lt;/p&gt;</description>
+    </item>
     <item>
       <title>Prometheus Client系列：如何获取指标值</title>
       <link>/post/promclient%E7%B3%BB%E5%88%97_%E6%8A%8Aprom%E6%8C%87%E6%A0%87%E8%BD%AC%E5%8C%96%E4%B8%BA/</link>
