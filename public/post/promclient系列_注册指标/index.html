@@ -47,7 +47,7 @@
 <meta itemprop="name" content="Prometheus Client系列：Prometheus指标注册与采集过程源码解析">
 <meta itemprop="description" content="解析 Prometheus 官方仪表化库第一篇，聚焦指标的注册和收集。"><meta itemprop="datePublished" content="2024-03-24T16:14:34+08:00" />
 <meta itemprop="dateModified" content="2024-06-16T22:50:05+08:00" />
-<meta itemprop="wordCount" content="3939">
+<meta itemprop="wordCount" content="3894">
 <meta itemprop="keywords" content="Prometheus," /><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Prometheus Client系列：Prometheus指标注册与采集过程源码解析"/>
 <meta name="twitter:description" content="解析 Prometheus 官方仪表化库第一篇，聚焦指标的注册和收集。"/>
 
@@ -127,13 +127,18 @@
     
     <header class="post-header">
       <h1 class="post-title">Prometheus Client系列：Prometheus指标注册与采集过程源码解析</h1>
-
+      
+        <script type="module">
+          import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
+          mermaid.initialize({ startOnLoad: true });
+        </script>
+      
       <div class="post-meta">
         <span class="post-time"> 2024-03-24 </span>
         <div class="post-category">
             <a href="/categories/%E6%8A%80%E6%9C%AF/"> 技术 </a>
             </div>
-          <span class="more-meta"> 约 3939 字 </span>
+          <span class="more-meta"> 约 3894 字 </span>
           <span class="more-meta"> 预计阅读 8 分钟 </span>
         
       </div>
@@ -271,19 +276,11 @@
 </div><p>上述就是仪表化应用的过程，接下来我们解析这一切的背后到底发生了什么。</p>
 <h1 id="指标如何被注册">指标如何被注册</h1>
 <p>注册指标的过程如下：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">graph LR
-</span></span><span class="line"><span class="cl"> A[NewGauge] --&gt; B[MustRegister]
-</span></span><span class="line"><span class="cl"> B --&gt; C[promhttp.Handler]
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="创建一个-collector">创建一个 Collector</h2>
+<pre class="mermaid">graph LR
+ A[NewGauge] --> B[MustRegister]
+ B --> C[promhttp.Handler]
+</pre>
+<h2 id="创建一个-collector">创建一个 Collector</h2>
 <p>首先，<code>NewGauge</code> 创建一个 Gauge 指标，同时也创建了一个 <code>Collector</code>。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -385,69 +382,36 @@
 </div>
 </div><h2 id="将-collector-注册到-register">将 Collector 注册到 Register</h2>
 <p><code>Registry</code> 结构体是后续收集指标的核心，其实现了 <code>Collector</code>、<code>Gather</code> 和 <code>Registerer</code> 三个接口，其中最重要的是 <code>Gatherer</code> 接口。</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">classDiagram
-</span></span><span class="line"><span class="cl">  class Registerer{
-</span></span><span class="line"><span class="cl">   &lt;&lt;interface&gt;&gt;
-</span></span><span class="line"><span class="cl">    Register(Collector) error
-</span></span><span class="line"><span class="cl">    MustRegister(...Collector)
-</span></span><span class="line"><span class="cl">    Unregister(Collector) bool
-</span></span><span class="line"><span class="cl">  }
-</span></span><span class="line"><span class="cl">  class Resigtry {
-</span></span><span class="line"><span class="cl">   Register(c Collector) error 
-</span></span><span class="line"><span class="cl">   Unregister(c Collector) bool
-</span></span><span class="line"><span class="cl">   MustRegister(cs ...Collector)
-</span></span><span class="line"><span class="cl">   Gather() ([]*dto.MetricFamily, error)
-</span></span><span class="line"><span class="cl">   Describe(ch chan&lt;- *Desc)
-</span></span><span class="line"><span class="cl">   Collect(ch chan&lt;- Metric)
-</span></span><span class="line"><span class="cl">  }
-</span></span><span class="line"><span class="cl">  class Collector {
-</span></span><span class="line"><span class="cl">   &lt;&lt;interface&gt;&gt;
-</span></span><span class="line"><span class="cl">    Describe(chan&lt;- *Desc)
-</span></span><span class="line"><span class="cl">    Collect(chan&lt;- Metric)
-</span></span><span class="line"><span class="cl">  }
-</span></span><span class="line"><span class="cl">  class Gatherer {
-</span></span><span class="line"><span class="cl">   &lt;&lt;interface&gt;&gt;
-</span></span><span class="line"><span class="cl">  Gather() ([]*dto.MetricFamily, error)
-</span></span><span class="line"><span class="cl">  }
-</span></span><span class="line"><span class="cl">  
-</span></span><span class="line"><span class="cl"> Registerer &lt;|.. Resigtry
-</span></span><span class="line"><span class="cl"> Collector &lt;|.. Resigtry
-</span></span><span class="line"><span class="cl"> Gatherer &lt;|.. Resigtry
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>这里补充一个小知识帮助区分 <code>Gatherer</code> 和 <code>Collector</code> 。两者都是接口，英文中 &ldquo;collect&rdquo; 和 &ldquo;gather&rdquo; 两个单词都有收集的意思，细微的分别在于 &ldquo;collect&rdquo; 通常涉及收集一组或同一个集合其中的一部分，而 gather 指从不同的来源汇聚到一起。<code>Collector</code> 用于收集一系列具有相同目的指标，如 Prometheus 中的一个指标，可以有不同的标签，但指标名不变。而 <code>Gatherer</code> 接口用于汇聚多个不同的 <code>Collector</code>，即收集不同名称的指标。举例来说，如果只是收集 <code>CpuTemp</code> 单个指标的数据，不管是 <code>CpuTemp{CPU=&quot;cpu1&quot;}</code> 还是 <code>CpuTemp{CPU=&quot;cpu2&quot;}</code>，都只能算是 &ldquo;collect&rdquo;，所以 <code>CpuTemp</code> 应该实现 <code>Collector</code> 接口。若需同时收集 <code>CpuTemp</code> 和 <code>MemUsage</code> 等不同指标数据，则属于 &ldquo;gather&rdquo;，需要用实现了 <code>Gatherer</code> 接口的 <code>Registry</code>。</p>
+<pre class="mermaid">classDiagram
+  class Registerer{
+   <<interface>>
+    Register(Collector) error
+    MustRegister(...Collector)
+    Unregister(Collector) bool
+  }
+  class Resigtry {
+   Register(c Collector) error 
+   Unregister(c Collector) bool
+   MustRegister(cs ...Collector)
+   Gather() ([]*dto.MetricFamily, error)
+   Describe(ch chan<- *Desc)
+   Collect(ch chan<- Metric)
+  }
+  class Collector {
+   <<interface>>
+    Describe(chan<- *Desc)
+    Collect(chan<- Metric)
+  }
+  class Gatherer {
+   <<interface>>
+  Gather() ([]*dto.MetricFamily, error)
+  }
+  
+ Registerer <|.. Resigtry
+ Collector <|.. Resigtry
+ Gatherer <|.. Resigtry
+</pre>
+<p>这里补充一个小知识帮助区分 <code>Gatherer</code> 和 <code>Collector</code> 。两者都是接口，英文中 &ldquo;collect&rdquo; 和 &ldquo;gather&rdquo; 两个单词都有收集的意思，细微的分别在于 &ldquo;collect&rdquo; 通常涉及收集一组或同一个集合其中的一部分，而 gather 指从不同的来源汇聚到一起。<code>Collector</code> 用于收集一系列具有相同目的指标，如 Prometheus 中的一个指标，可以有不同的标签，但指标名不变。而 <code>Gatherer</code> 接口用于汇聚多个不同的 <code>Collector</code>，即收集不同名称的指标。举例来说，如果只是收集 <code>CpuTemp</code> 单个指标的数据，不管是 <code>CpuTemp{CPU=&quot;cpu1&quot;}</code> 还是 <code>CpuTemp{CPU=&quot;cpu2&quot;}</code>，都只能算是 &ldquo;collect&rdquo;，所以 <code>CpuTemp</code> 应该实现 <code>Collector</code> 接口。若需同时收集 <code>CpuTemp</code> 和 <code>MemUsage</code> 等不同指标数据，则属于 &ldquo;gather&rdquo;，需要用实现了 <code>Gatherer</code> 接口的 <code>Registry</code>。</p>
 <p>让我们仔细看看 <code>Registry</code> 结构体的真容，其最核心的字段是 <code>collectorsByID</code>，用于储存注册了的 <code>Collector</code>。以下是 <code>Registry</code> 结构体的部分代码：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -599,29 +563,16 @@
 <p>因此，无论描述符的 ID 以何种顺序出现，其异或结果（即 <code>collectorID</code>）都是一样的。这意味着，只要一个收集器产生的描述符 ID 集合不变，那么计算出的 <code>collectorID</code> 就会保持不变，从而可以作为该收集器的唯一标识符。</p>
 <h1 id="拉取指标的过程">拉取指标的过程</h1>
 <p>每次通过 <code>/metrics</code> 拉取指标，都会触发一次 <code>gather</code>，执行所有 <code>Collector</code> 去收集指标。流程如下：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span><span class="lnt">6
-</span><span class="lnt">7
-</span><span class="lnt">8
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">graph TD
-</span></span><span class="line"><span class="cl"> A[promhttp.Handler] --&gt; B[InstrumentMetricHandler]
-</span></span><span class="line"><span class="cl"> B --&gt; E[HandlerFor]
-</span></span><span class="line"><span class="cl"> B --&gt; C[InstrumentHandlerCounter]
-</span></span><span class="line"><span class="cl"> C --&gt; D[InstrumentHandlerInFlight]
-</span></span><span class="line"><span class="cl"> E --&gt; F[HandlerForTransactional]
-</span></span><span class="line"><span class="cl"> F --&gt; G[reg.Gather]
-</span></span><span class="line"><span class="cl"> G --&gt; H[enc.Encode]
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>其中 <code>InstrumentXXX</code> 函数用于仪表化 /metrics 接口，HandlerFor 函数用于生成 http.Handler。</p>
+<pre class="mermaid">graph TD
+ A[promhttp.Handler] --> B[InstrumentMetricHandler]
+ B --> E[HandlerFor]
+ B --> C[InstrumentHandlerCounter]
+ C --> D[InstrumentHandlerInFlight]
+ E --> F[HandlerForTransactional]
+ F --> G[reg.Gather]
+ G --> H[enc.Encode]
+</pre>
+<p>其中 <code>InstrumentXXX</code> 函数用于仪表化 /metrics 接口，HandlerFor 函数用于生成 http.Handler。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -641,19 +592,11 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><h2 id="仪表化httphandler">仪表化http.Handler</h2>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">graph LR
-</span></span><span class="line"><span class="cl">	A[InstrumentMetricHandler] --&gt; B[InstrumentHandlerCounter]
-</span></span><span class="line"><span class="cl">	B --&gt; C[InstrumentHandlerInFlight]
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p><code>InstrumentMetricHandler</code> 中定义了两个指标，分别是：</p>
+<pre class="mermaid">graph LR
+	A[InstrumentMetricHandler] --> B[InstrumentHandlerCounter]
+	B --> C[InstrumentHandlerInFlight]
+</pre>
+<p><code>InstrumentMetricHandler</code> 中定义了两个指标，分别是：</p>
 <ol>
 <li><code>promhttp_metric_handler_requests_total</code> 已处理的请求总数</li>
 <li><code>promhttp_metric_handler_requests_in_flight</code>：处理中的请求数</li>
@@ -825,19 +768,11 @@
 </div>
 </div><p>在 <code>registry.Gather</code> 中，Registry 会把已经注册的所有 <code>Collector</code> 放入 <code>checkedCollectors</code> 和 <code>uncheckedCollectors</code> 两个 channel 中，然后启动多个 goroutine 去收集指标。goroutine 的总数由 <code>goroutineBudget</code> 控制，<code>collectWorker</code> 函数会不断从 <code>checkedCollectors</code> 和 <code>uncheckedCollectors</code> 中取出 <code>Collector</code> 去收集指标，并把收集的指标存入 <code>checkedMetricChan</code> 和 <code>uncheckedMetricChan</code>。
 collectWorker 为 <code>checkedMetricChan</code> 和 <code>uncheckedMetricChan</code> 的生产者，<code>checkedCollectors</code> 和 <code>uncheckedCollectors</code> 的消费者。<code>checkedMetricChan</code> 和 <code>uncheckedMetricChan</code> 会被消费者消费完后关闭，以此来通知生产者停止生产。</p>
+<pre class="mermaid">graph LR
+ A[collectWorker] -->|checkedMetricChan| B[case metric, ok := <-cmc:]
+ A -->|uncheckedMetricChan| C[case metric, ok := <-umc]
+</pre>
 <div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">graph LR
-</span></span><span class="line"><span class="cl"> A[collectWorker] --&gt;|checkedMetricChan| B[case metric, ok := &lt;-cmc:]
-</span></span><span class="line"><span class="cl"> A --&gt;|uncheckedMetricChan| C[case metric, ok := &lt;-umc]
-</span></span></code></pre></td></tr></table>
-</div>
-</div><div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
 </span><span class="lnt"> 2
