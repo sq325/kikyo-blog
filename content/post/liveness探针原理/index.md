@@ -5,8 +5,8 @@ lastmod: 2024-04-04T20:09:22+08:00
 draft: true
 keywords: []
 description: ""
-tags: []
-categories: []
+tags: ["k8s"]
+categories: ["技术"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.
@@ -64,8 +64,6 @@ spec:
 
 pod的重启逻辑是在kubelet中实现的，kubelet会定期检查pod的状态，如果发现pod的状态不正常，就会根据pod.spec.restartPolicy的设置来决定是否重启pod。源码如下：
 
-
-
 exec
 
 ```mermaid
@@ -91,10 +89,6 @@ graph TD
 	
 ```
 
-
-
-
-
 containerd
 
 ```mermaid
@@ -104,12 +98,6 @@ graph TD
 	C --> D[task.Exec]
 	D --> E[tasksClient.Exec]
 ```
-
-
-
-
-
-
 
 # 检测探针结果
 
@@ -163,8 +151,6 @@ const (
 	Failure
 )
 ```
-
-
 
 ```go
 func (w *worker) doProbe(ctx context.Context) (keepGoing bool) {
