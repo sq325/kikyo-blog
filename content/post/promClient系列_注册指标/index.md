@@ -191,27 +191,27 @@ classDiagram
     MustRegister(...Collector)
     Unregister(Collector) bool
   }
-  class Resigtry {
+  class Registry {
    Register(c Collector) error 
    Unregister(c Collector) bool
    MustRegister(cs ...Collector)
-   Gather() ([]*dto.MetricFamily, error)
-   Describe(ch chan<- *Desc)
-   Collect(ch chan<- Metric)
+   "Gather() ([]*dto.MetricFamily, error)"
+   "Describe(ch chan&lt;- *Desc)"
+   "Collect(ch chan&lt;- Metric)"
   }
   class Collector {
    <<interface>>
-    Describe(chan<- *Desc)
-    Collect(chan<- Metric)
+    "Describe(chan&lt;- *Desc)"
+    "Collect(chan&lt;- Metric)"
   }
   class Gatherer {
    <<interface>>
-  Gather() ([]*dto.MetricFamily, error)
+  "Gather() ([]*dto.MetricFamily, error)"
   }
   
- Registerer <|.. Resigtry
- Collector <|.. Resigtry
- Gatherer <|.. Resigtry
+ Registerer <|.. Registry
+ Collector <|.. Registry
+ Gatherer <|.. Registry
 ```
 
 这里补充一个小知识帮助区分 `Gatherer` 和 `Collector` 。两者都是接口，英文中 "collect" 和 "gather" 两个单词都有收集的意思，细微的分别在于 "collect" 通常涉及收集一组或同一个集合其中的一部分，而 gather 指从不同的来源汇聚到一起。`Collector` 用于收集一系列具有相同目的指标，如 Prometheus 中的一个指标，可以有不同的标签，但指标名不变。而 `Gatherer` 接口用于汇聚多个不同的 `Collector`，即收集不同名称的指标。举例来说，如果只是收集 `CpuTemp` 单个指标的数据，不管是 `CpuTemp{CPU="cpu1"}` 还是 `CpuTemp{CPU="cpu2"}`，都只能算是 "collect"，所以 `CpuTemp` 应该实现 `Collector` 接口。若需同时收集 `CpuTemp` 和 `MemUsage` 等不同指标数据，则属于 "gather"，需要用实现了 `Gatherer` 接口的 `Registry`。
