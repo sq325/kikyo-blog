@@ -385,6 +385,8 @@ sequenceDiagram
     
     Routing->>Routing: 查路由表
     Note right of Routing: 命中路由：via 10.20.4.0 dev vxlan.2
+    Note right of Routing: 查询arp表，组装二层包
+    Note right of Routing: src mac=vxlan mac，target mac=target vtep mac
 
     Routing->>Vxlan: 转发给 VXLAN 设备
     Vxlan->>Vxlan: 封装数据包 (UDP Tunnel)
