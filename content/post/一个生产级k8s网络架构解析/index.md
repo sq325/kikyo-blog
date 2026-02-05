@@ -409,6 +409,32 @@ sequenceDiagram
 
 ### SNAT 和 conntrack
 
+overlay pod 访问集群外网络，出去的流量不会经过vxlan封装，路径和物理节点访问外网一样。唯一的问题是src ip是overlay的ip，集群外没有这个ip的路由信息。为了解决这个问题，会对overlay pod访问非overlay网段的流量做snat，通常是masquerade，把src ip改为节点的物理ip。这样集群外的主机就能正确回复流量回到节点，节点再根据conntrack表把流量转发回pod。
+大致流程如下：
+
+1. overlay pod发送的流量到达节点内核网络空间，查询路由信息后获取下一跳的ip地址（不会经过vxlan）。
+2. iptables 捕获包，根据规则判断包的src ip是overlay网段，目的ip不是overlay网段，执行snat，把src ip改为节点物理ip。
+3. conntrack 会记录这个连接的原始src ip和snat后的src ip映射关系，等到回复包回来时，根据这个映射关系把流量转发回pod。
+
+```bash
+# 在 *mangle 表中，来自 10.20.0.0/16（Overlay 网段）的报文被打上 0x100 标记
+-A PREROUTING -s 10.20.0.0/16 ... -j MARK --set-xmark 0x100/0x100
+
+# 在 *nat 表中，带有 0x100 标记的报文进入 UPCS-MASQUERADE 链处理
+-A POSTROUTING -m mark --mark 0x100/0x100 -j UPCS-MASQUERADE 
+
+# 如果目标ip是overlay网段，直接返回，不做snat，否则执行masquerade
+# masquerade是一种动态 SNAT，它将数据包的源 IP (Pod IP) 修改为宿主机出口网卡的 IP 地址。
+-A UPCS-MASQUERADE -d 10.20.0.0/16 ... -j RETURN
+-A UPCS-MASQUERADE -j MASQUERADE
+```
+
 # Underlay 网络设计
 
-# 和集群外网络的互通
+# overlay 和 underlay 的互通分析
+
+# service 实现 -- ipvs
+
+## overlay访问svc原理分析
+
+## underlay访问svc原理分析
