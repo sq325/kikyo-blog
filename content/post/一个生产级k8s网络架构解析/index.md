@@ -168,7 +168,7 @@ default via 169.254.1.1 dev eth0
        valid_lft forever preferred_lft forever
 ```
 
-scope link的作用是告诉内核，这个路由是直接连接的，不需要经过arp解析，不用管子网掩码。因为pod和主机网络空间是通过veth pair连接的，veth pair本质上是一个二层直连链路，arp解析没有意义，所以需要配置scope link。
+scope link的作用是告诉内核，这个路由是直接连接的，不用管子网掩码。因为pod和主机网络空间是通过veth pair连接的，veth pair本质上是一个二层直连链路，所以需要配置scope link。
 反过来，node上配置的overlay veth 接口的路由规则也设置了scope link，流量经过vxlan解封装后通过路由直接发给pod的veth，如下所示：
 
 ```bash
@@ -432,6 +432,210 @@ overlay pod 访问集群外网络，出去的流量不会经过vxlan封装，路
 ```
 
 # Underlay 网络设计
+
+## underlay pod 出站流程分析
+
+### 从 pod 命名空间 -> 进入biz 接口的流程分析
+
+1. Pod 内部路由网关指向物理网关（10.186.155.30）。
+2. Pod 内网络栈发起 ARP 请求获取网关 MAC。匹配到路由 scope link，意味着网关在二层直连网络上，因此必须进行 ARP 解析以获取目的 MAC。
+3. 封装好二层包头（Dst MAC=Gateway）后，通过 eth0 发出。
+4. eth0 作为 IPvlan 的子接口，其本身的核心操作函数被注册为 IPvlan 的驱动函数，所有发往 eth0 的流量都会被 IPvlan 驱动捕获。
+5. IPvlan 驱动捕获该流量，直接将其挂载到 Master 接口 vlan.1155 的发送队列。
+6. 由于 vlan.1155 是 biz 的 VLAN 子接口，Linux 内核在发包时会自动打上 VLAN Tag 1155。
+
+**路由和接口信息：**
+
+```bash
+# node 节点 vlan 接口信息
+39: vlan.1156@biz: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
+40: vlan.1157@biz: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
+41: vlan.1155@biz: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
+98: vlan.1158@biz: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
+
+# underlay pod 容器内接口信息和路由信息
+2: eth0@if41: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
+    inet 10.186.155.6/27 brd 10.186.155.31 scope global eth0
+
+default via 10.186.155.30 dev eth0 
+10.186.155.0/27 dev eth0 scope link  src 10.186.155.6 
+```
+
+**数据包结构示例：**
+
+pod 包查到物理网关的mac地址，封装二层包头：
+
+```plain
+[ 原始二层以太网帧 (Untagged) ]
++---------------------+---------------------+-----------+-------------------------+
+| Dst MAC             | Src MAC             | EtherType | L3 IP Header            |
+| (Gateway MAC)       | (Shared Parent MAC) | IPv4      | Src: 10.186.155.6       |
+| aa:bb:cc:dd:ee:ff   | 30:b9:30:3d:84:8d   | 0x0800    | Dst: 8.8.8.8            |
++---------------------+---------------------+-----------+-------------------------+
+```
+
+vlan.1155 打上 VLAN Tag 后：
+
+```plain
+[ 插入 VLAN Tag 的帧 (Tagged) ]
++---------------------+---------------------+===========+-----------+-------------+
+| Dst MAC             | Src MAC             | 802.1Q    | EtherType | L3 IP Header|
+| (Gateway MAC)       | (Shared Parent MAC) | VLAN ID   | IPv4      | (不变)      |
+| aa:bb:cc:dd:ee:ff   | 30:b9:30:3d:84:8d   | 1155      | 0x0800    |             |
++---------------------+---------------------+===========+-----------+-------------+
+                                                 ^
+                                                 |
+                                         Linux 内核自动插入
+```
+
+### OVS 转发
+
+1. 流量作为 Tagged 帧进入 OVS 的 biz 端口。
+2. OVS 依据标准二层交换逻辑：
+
+     * 学习 Source MAC（Pod MAC）与 biz 端口的映射。
+     * 查找 Destination MAC（Gateway MAC）。若表中存在（指向 bond0），则单播转发；若不存在，则泛洪。
+3. 最终流量经由 bond0 上联物理网口发出。
+
+> 数据包头在ovs中没有变化，ovs中只转发
+
+### pod 的入站流程分析
+
+1. 回包到达 vlan.1155（Master 设备）。
+
+2. IPvlan 驱动作为 hook 截获流量。它是入流量且目的 IP 匹配子接口表中的记录。
+
+3. IPvlan 直接将包注入对应 Pod 的接收队列，完成 L3 到 L2 的分发。
+
+**IPvlan 内部的映射关系示意图：**
+
+| Key (Dst IP)    | Value (Target Device)     |
+| --------------- | ------------------------- |
+| `10.186.155.6`  | -> Pod A Namespace / eth0 |
+| `10.186.155.32` | -> Pod B Namespace / eth0 |
+| `10.186.155.33` | -> Pod C Namespace / eth0 |
+| (No Match)      | -> Host (vlan.1155)       |
+
+**数据包结构示例：**
+vlan.1155 接收到回包，剥离 VLAN Tag 后，IPvlan 驱动捕获到这个包进行 L3 分流：
+
+```plain
+[ 入站的 VLAN 帧 ]
++---------------------+---------------------+===========+-----------+-------------------------+
+| Dst MAC             | Src MAC             | 802.1Q    | EtherType | L3 IP Header            |
+| (Shared Parent MAC) | (Gateway MAC)       | VLAN ID   | IPv4      | Src: 8.8.8.8            |
+| 30:b9:30:3d:84:8d   | aa:bb:cc:dd:ee:ff   | 1155      | 0x0800    | Dst: 10.186.155.6 (Pod) |
++---------------------+---------------------+===========+-----------+-------------------------+
+
+
+[ Hook 处理中的状态 (逻辑视角) ]
+                                         (查看此处 IP 进行分流)
+                                                  |
+                                                  v
++---------------------+---------------------+-----------+-------------------------+
+| Dst MAC             | Src MAC             | EtherType | L3 IP Header            |
+| ...                 | ...                 | 0x0800    | Dst: 10.186.155.6       |
++---------------------+---------------------+-----------+-------------------------+
+
+
+[ Pod 内收到的最终标准帧 (Untagged) ]
++---------------------+---------------------+-----------+-------------------------+
+| Dst MAC             | Src MAC             | EtherType | L3 IP Header            |
+| (Shared Parent MAC) | (Gateway MAC)       | IPv4      | Src: 8.8.8.8            |
+| 30:b9:30:3d:84:8d   | aa:bb:cc:dd:ee:ff   | 0x0800    | Dst: 10.186.155.6       |
++---------------------+---------------------+-----------+-------------------------+
+```
+
+**整体流程如下：**
+
+```mermaid
+graph TD
+    %% 定义样式
+    classDef ns fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef device fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,rx:5,ry:5;
+    classDef phy fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,rx:5,ry:5;
+
+    subgraph PodNS ["Pod Namespace (容器环境)"]
+        direction TB
+        P_Route["路由表 (Default Gateway: 10.186.155.30)"]
+        P_Eth0["eth0@if41 (IP: 10.186.155.6)"]
+    end
+
+    subgraph Kernel ["Linux Kernel Layer"]
+        Driver["IPVLAN 驱动 (Hook)"]
+        Note_MAC["特性：共享 MAC 地址<br/>(8e:78:9c:32:b5:72)"]
+    end
+
+    subgraph HostNS ["Host Namespace (宿主机环境)"]
+        direction TB
+        H_Vlan["vlan.1155@biz (Index 41)<br/>父接口 / VLAN 映射"]
+        H_Biz["biz / bond0 (聚合接口)"]
+        H_Phy["Physical NICs (ens5f0np0)"]
+    end
+
+    subgraph PhysNet ["Physical Network (物理层)"]
+        Switch_Port["物理交换机端口"]
+        Switch_SVI["ToR 网关 (IP: 10.186.155.30)"]
+    end
+
+    %% 流量路径逻辑连接
+    P_Route -->|匹配默认路由| P_Eth0
+    P_Eth0 -->|"L3 出栈 (直接挂载)"| Driver
+    Driver -.->|关联父接口| H_Vlan
+    Driver --- Note_MAC
+    
+    H_Vlan -->|打上 VLAN Tag 1155| H_Biz
+    H_Biz -->|L2 传输| H_Phy
+    H_Phy -->|线缆传输| Switch_Port
+    Switch_Port -->|三层路由转发| Switch_SVI
+
+    %% 应用样式
+    class PodNS,HostNS ns;
+    class P_Eth0,H_Vlan,H_Biz,H_Phy device;
+    class Switch_SVI phy;
+```
+
+## 出站和入站时序图
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Pod as "Pod (eth0)"
+    participant IPvlan as "IPvlan 驱动 (Kernel)"
+    participant Master as "Master 接口 (vlan.1155)"
+    participant OVS as "OVS 网桥 (biz/bond0)"
+    participant PhyNet as "物理网关 (Gateway)"
+
+    Note over Pod, PhyNet: 阶段一：Egress 发包准备
+    Pod->>Pod: 路由查找 (Default via Gateway)
+    Pod->>Pod: 匹配 Scope Link，发起 ARP 请求
+    Pod->>Pod: 封装二层头 (Dst MAC = Gateway)
+    
+    Note over Pod, IPvlan: 阶段二：IPvlan 出站处理
+    Pod->>IPvlan: 通过 eth0 发出数据包
+    note right of IPvlan: 不需要 Hook<br/>直接执行驱动代码
+    IPvlan->>Master: 挂载到发送队列 (Queue Grafting)
+    
+    Note over Master, OVS: 阶段三：VLAN 与 OVS 转发
+    Master->>OVS: 自动打上 VLAN Tag 1155 并注入 biz 端口
+    OVS->>OVS: 学习源 MAC (Pod MAC) -> biz
+    OVS->>OVS: 查表目的 MAC (Gateway) -> bond0
+    OVS->>PhyNet: 经 bond0 发送至物理网络
+
+    rect rgb(240, 248, 255)
+        Note over PhyNet, Pod: 阶段四：Ingress 入站回包
+        PhyNet-->>OVS: 回包到达物理口
+        OVS-->>Master: 转发至 vlan.1155 (Tag Stripped/Passed)
+        Master->>IPvlan: 触发 RX Handler (Hook 截获)
+        note right of IPvlan: 关键逻辑：L3 Demux<br/>(根据目的 IP 查表)
+        IPvlan->>Pod: 注入 Pod 接收队列
+    end
+```
 
 # overlay 和 underlay 的互通分析
 
