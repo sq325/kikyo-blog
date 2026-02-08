@@ -435,19 +435,36 @@ overlay pod 访问集群外网络，出去的流量不会经过vxlan封装，路
 
 ## underlay pod 出站流程分析
 
-### 从 pod 命名空间 -> 进入biz 接口的流程分析
+### pod 命名空间 --> biz 接口
+
+**pod 内网络协议栈：**
 
 1. Pod 内部路由网关指向物理网关（10.186.155.30）。
-2. Pod 内网络栈发起 ARP 请求获取网关 MAC。匹配到路由 scope link，意味着网关在二层直连网络上，因此必须进行 ARP 解析以获取目的 MAC。
+2. Pod 内网络栈匹配到路由 scope link，意味着网关在二层直连网络上，发起 ARP 请求获取网关 MAC。
 3. 封装好二层包头（Dst MAC=Gateway）后，通过 eth0 发出。
-4. eth0 作为 IPvlan 的子接口，其本身的核心操作函数被注册为 IPvlan 的驱动函数，所有发往 eth0 的流量都会被 IPvlan 驱动捕获。
-5. IPvlan 驱动捕获该流量，直接将其挂载到 Master 接口 vlan.1155 的发送队列。
-6. 由于 vlan.1155 是 biz 的 VLAN 子接口，Linux 内核在发包时会自动打上 VLAN Tag 1155。
 
-**路由和接口信息：**
+> eth0@if41 是 IPvlan 子设备，pod 内网络协议栈会根据路由信息把所有流量都通过 eth0@if41发出
 
 ```bash
-# node 节点 vlan 接口信息
+# underlay pod 容器内接口信息
+2: eth0@if41: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
+    inet 10.186.155.6/27 brd 10.186.155.31 scope global eth0
+# 路由信息
+default via 10.186.155.30 dev eth0 
+10.186.155.0/27 dev eth0 scope link  src 10.186.155.6 
+```
+
+**IPvlan + vlan：**
+
+1. eth0 作为 IPvlan 的子接口，其本身的核心操作函数被注册为 IPvlan 的驱动函数，所有发往 eth0 的流量都会被 IPvlan 驱动捕获。
+2. IPvlan 驱动捕获该流量，直接将其挂载到 Master 接口 vlan.1155 的发送队列。
+3. 由于 vlan.1155 是 biz 的 VLAN 子接口，Linux 内核在发包时会自动打上 VLAN Tag 1155，发送给 vlan master 接口（biz）。
+
+> 出站时，IPvlan无需对数据包做改动，直接把数据包从 pod 命名空间递送给 node 命名空间的 IPvlan master 接口（vlan.1155)
+
+```bash
+# node节点 vlan 接口信息
 39: vlan.1156@biz: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
     link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
 40: vlan.1157@biz: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
@@ -457,18 +474,11 @@ overlay pod 访问集群外网络，出去的流量不会经过vxlan封装，路
 98: vlan.1158@biz: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
     link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
 
-# underlay pod 容器内接口信息和路由信息
-2: eth0@if41: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
-    link/ether 8e:78:9c:32:b5:72 brd ff:ff:ff:ff:ff:ff
-    inet 10.186.155.6/27 brd 10.186.155.31 scope global eth0
-
-default via 10.186.155.30 dev eth0 
-10.186.155.0/27 dev eth0 scope link  src 10.186.155.6 
 ```
 
 **数据包结构示例：**
 
-pod 包查到物理网关的mac地址，封装二层包头：
+pod 命名空间内，网路协议栈通过 arp 获取物理网关的 mac 地址，封装二层包头：
 
 ```plain
 [ 原始二层以太网帧 (Untagged) ]
@@ -493,24 +503,26 @@ vlan.1155 打上 VLAN Tag 后：
                                          Linux 内核自动插入
 ```
 
-### OVS 转发
+### OVS --> 物理网关
 
-1. 流量作为 Tagged 帧进入 OVS 的 biz 端口。
-2. OVS 依据标准二层交换逻辑：
+1. 已经被标记 vlan tag 的流量进入 OVS 的 biz 端口。
+2. OVS 依据标准二层交换逻辑处理网络包：
 
      * 学习 Source MAC（Pod MAC）与 biz 端口的映射。
      * 查找 Destination MAC（Gateway MAC）。若表中存在（指向 bond0），则单播转发；若不存在，则泛洪。
 3. 最终流量经由 bond0 上联物理网口发出。
 
-> 数据包头在ovs中没有变化，ovs中只转发
+> 数据包头在 OVS 中没有变化，OVS 中只转发
 
 ### pod 的入站流程分析
 
 1. 回包到达 vlan.1155（Master 设备）。
 
-2. IPvlan 驱动作为 hook 截获流量。它是入流量且目的 IP 匹配子接口表中的记录。
+2. IPvlan 驱动作为Master 设备上的 hook 截获流量。
 
-3. IPvlan 直接将包注入对应 Pod 的接收队列，完成 L3 到 L2 的分发。
+3. 读取网络包的三层头信息，获取Target IP ，查询内部是否有子接口匹配。
+
+4. IPvlan 直接将包注入对应 Pod 的接收队列，完成 L3 到 L2 的分发。
 
 **IPvlan 内部的映射关系示意图：**
 
@@ -602,6 +614,8 @@ graph TD
 
 ## 出站和入站时序图
 
+出站：
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -637,10 +651,126 @@ sequenceDiagram
     end
 ```
 
-# overlay 和 underlay 的互通分析
 
-# service 实现 -- ipvs
 
-## overlay访问svc原理分析
+## 网络层面的二层架构
 
-## underlay访问svc原理分析
+使用 IPvlan L2 模式，配合 vlan 和 OVS，实现了一个扁平化的大二层 Underlay 网络。其中 Node 节点本身担任交换机角色，作用是把调度到本 Node 上的 Pod 接入这个多 vlan 的二层网络。从网络层面看，此 Underlay 网络如下图所示：
+
+```mermaid
+flowchart TB
+  %% --- 样式定义 ---
+  classDef phySwitch fill:#cfd8dc,stroke:#37474f,stroke-width:3px,color:#000;
+  classDef nodeBox fill:#eceff1,stroke:#607d8b,stroke-width:2px,stroke-dasharray: 0;
+  classDef nicLayer fill:#b0bec5,stroke:#455a64,stroke-width:2px,color:#000;
+  classDef podNode fill:#fff,stroke:#333,stroke-width:1px;
+  
+  %% VLAN 颜色定义 (用于区分 VLAN 域)
+  classDef vlan1155 fill:#e3f2fd,stroke:#1565c0,stroke-dasharray: 5 5;
+  classDef vlan1156 fill:#fff3e0,stroke:#ef6c00,stroke-dasharray: 5 5;
+  classDef vlan1157 fill:#e8f5e9,stroke:#2e7d32,stroke-dasharray: 5 5;
+  classDef vlan1158 fill:#f3e5f5,stroke:#7b1fa2,stroke-dasharray: 5 5;
+
+  %% --- 顶层物理设备 ---
+  CoreSwitch["Gateway / Physical Switch<br/>(Core)"]:::phySwitch
+
+  %% --- Node 1 ---
+  subgraph Node1 ["k8s-node-01"]
+    direction TB
+    N1_NIC["Node1 Adapter<br/>(IPVlan Master / Trunk)"]:::nicLayer
+    
+    %% Node1 内部的 VLAN 划分
+    subgraph N1_V1155 ["VLAN 1155 (Subnet .155.x)"]
+      N1_P1(Pod A1):::podNode
+      N1_P2(Pod A2):::podNode
+    end
+    subgraph N1_V1156 ["VLAN 1156 (Subnet .156.x)"]
+      N1_P3(Pod B1):::podNode
+    end
+    subgraph N1_V1157 ["VLAN 1157 (Subnet .157.x)"]
+      N1_P4(Pod C1):::podNode
+    end
+    subgraph N1_V1158 ["VLAN 1158 (Subnet .158.x)"]
+      N1_P5(Pod D1):::podNode
+    end
+    
+    %% 连接关系
+    N1_NIC ==> N1_V1155 & N1_V1156 & N1_V1157 & N1_V1158
+  end
+
+  %% --- Node 2 ---
+  subgraph Node2 ["k8s-node-02"]
+    direction TB
+    N2_NIC["Node2 Adapter<br/>(IPVlan Master / Trunk)"]:::nicLayer
+    
+    subgraph N2_V1155 ["VLAN 1155"]
+      N2_P1(Pod A3):::podNode
+    end
+    subgraph N2_V1156 ["VLAN 1156"]
+      N2_P3(Pod B2):::podNode
+      N2_P4(Pod B3):::podNode
+    end
+    subgraph N2_V1157 ["VLAN 1157"]
+       N2_P5(Pod C2):::podNode
+    end
+    subgraph N2_V1158 ["VLAN 1158"]
+       N2_P6(Pod D2):::podNode
+    end
+
+    N2_NIC ==> N2_V1155 & N2_V1156 & N2_V1157 & N2_V1158
+  end
+
+  %% --- Node 3 ---
+  subgraph Node3 ["k8s-node-03"]
+    direction TB
+    N3_NIC["Node3 Adapter<br/>(IPVlan Master / Trunk)"]:::nicLayer
+
+    subgraph N3_V1155 ["VLAN 1155"]
+       N3_P1(Pod A4):::podNode
+    end
+    subgraph N3_V1156 ["VLAN 1156"]
+       N3_P2(Pod B4):::podNode
+    end
+    subgraph N3_V1157 ["VLAN 1157"]
+       N3_P3(Pod C3):::podNode
+       N3_P4(Pod C4):::podNode
+    end
+    subgraph N3_V1158 ["VLAN 1158"]
+       N3_P5(Pod D3):::podNode
+    end
+
+    N3_NIC ==> N3_V1155 & N3_V1156 & N3_V1157 & N3_V1158
+  end
+  
+  %% --- 物理链路 (Trunk) ---
+  CoreSwitch <== Trunk ==> N1_NIC & N2_NIC & N3_NIC
+
+  %% 应用样式到 Subgraph (VLAN)
+  class N1_V1155,N2_V1155,N3_V1155 vlan1155;
+  class N1_V1156,N2_V1156,N3_V1156 vlan1156;
+  class N1_V1157,N2_V1157,N3_V1157 vlan1157;
+  class N1_V1158,N2_V1158,N3_V1158 vlan1158;
+  class Node1,Node2,Node3 nodeBox;
+```
+
+
+
+# Overlay 和 Underlay 的互通分析
+
+## Overlay --> Underlay 
+
+
+
+
+
+## Underlay --> Overlay
+
+
+
+# Q&A
+
+Q：IPvlan 的作用是什么，为什么要用 IPvlan 实现 Underlay 网络？
+
+
+
+Q：IPvlan 和 BGP 比，优势和劣势是什么？
