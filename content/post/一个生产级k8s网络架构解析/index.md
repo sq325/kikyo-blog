@@ -13,7 +13,7 @@ author: ""
 # P.S. comment can only be closed
 comment: true
 toc: true
-autoCollapseToc: true
+autoCollapseToc: false
 postMetaInFooter: true
 hiddenFromHomePage: false
 # You can also define another contentCopyright. e.g. contentCopyright: "This is another copyright."
@@ -31,11 +31,11 @@ hideHeaderAndFooter: false
 #enableOutdatedInfoWarning: false
 
 flowchartDiagrams:
-  enable: false
+  enable: true
   options: ""
 
 sequenceDiagrams: 
-  enable: false
+  enable: true
   options: ""
 
 ---
