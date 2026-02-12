@@ -2,7 +2,7 @@
 title: "underlay和overlay访问service解析"
 date: 2026-02-11T10:24:32+08:00
 lastmod: 2026-02-12T10:24:32+08:00
-draft: true
+draft: false
 keywords: []
 description: ""
 tags: ["k8s"]
@@ -41,13 +41,13 @@ sequenceDiagrams:
 ---
 
 
-上篇介绍了一个[生产级 k8s 网络架构](../一个生产级k8s网络架构解析/)，其中详细介绍了underlay和overlay的实现方案。承接上文的架构，本文进一步介绍service的实现方式以及underlay和overlay访问service的原理。
+上篇介绍了一个[生产级 K8s 网络架构](../一个生产级k8s网络架构解析/)，其中详细介绍了 Underlay 和 Overlay 的实现方案。承接上文的架构，本文进一步介绍 Service 的实现方式以及 Underlay 和 Overlay 访问 Service 的原理。
 
 <!--more-->
 
-# service实现方式
+# Service 实现方式
 
-早期 k8s service 实现方式是通过 iptables 规则，kube-proxy 会在集群 node 上为每个 service 维护 iptables 规则。内核 Netfilter 拦截每个发往 service 的数据包，进行 DNAT，把 target ip 设置成后端 pod ip。随着 service 数量增多，iptables 的规则数量也会增加，最终会影响性能。有测试表明，当 service 数量大于1000时，iptables 性能会低于 IPVS。
+早期 K8s Service 实现方式是通过 iptables 规则，kube-proxy 会在集群 Node 上为每个 Service 维护 iptables 规则。内核 Netfilter 拦截每个发往 Service 的数据包，进行 DNAT，把 Target IP 设置成后端 Pod IP。随着 Service 数量增多，iptables 的规则数量也会增加，最终会影响性能。有测试表明，当 Service 数量大于 1000 时，iptables 性能会低于 IPVS。
 
 ```bash
 # iptables 实现的 service dnat 规则
@@ -57,14 +57,14 @@ DNAT       tcp  --  anywhere             anywhere             /* default/prometh
 DNAT       tcp  --  anywhere             anywhere             /* default/centos */ tcp to:10.244.2.34:80
 ```
 
-当前主流的 k8s service 的主流方案是使用 IPVS，其是内核的一部分，实现了 NAT 和负载均衡的功能。工作原理如下：
+当前主流的 K8s Service 的方案是使用 IPVS，其是内核的一部分，实现了 NAT 和负载均衡的功能。工作原理如下：
 
-1. 当 service 创建时，kube-proxy 会在kube-ipvs0这个 dummy 接口上配置cluster ip（`8.6.10.1:80`），配置 IPVS 虚拟服务器。
-2. kube-proxy 会持续监听 service 后端 endpoint，并更新 IPVS 中对应的真实服务器（`10.20.2.156:8080`）。
-3. 当需要访问cluster ip的网络包进入达主机网络协议栈，由于 cluster ip 在本地的kube-ipvs0接口上，根据 local 路由表，会发往ipvs0前的INPUT 链。
-4. IPVS 在 INPUT 链有HOOK，拦截流量并进入IPVS 模块。
-5. IPVS 会根据 cluster ip（`8.6.10.1:80`）和负载均衡算法在后端的真实服务器中选择一个（`10.20.2.156:8080`），并直接DNAT。
-6. 数据包会跳过OUTPUT 链，重新路由决策后发送到POSTROUTING 链，出网络协议栈。
+1. 当 Service 创建时，kube-proxy 会在 `kube-ipvs0` 这个 Dummy 接口上配置 Cluster IP（`8.6.10.1:80`），并配置 IPVS 虚拟服务器。
+2. kube-proxy 会持续监听 Service 后端 Endpoint，并更新 IPVS 中对应的真实服务器（`10.20.2.156:8080`）。
+3. 当访问 Cluster IP 的网络包进入主机网络协议栈时，由于 Cluster IP 配置在本地的 `kube-ipvs0` 接口上，根据 Local 路由表，流量会发往 INPUT 链。
+4. IPVS 在 INPUT 链挂载了 Hook，拦截流量并进入 IPVS 模块。
+5. IPVS 会根据 Cluster IP（`8.6.10.1:80`）和负载均衡算法在后端的真实服务器中选择一个（`10.20.2.156:8080`），并直接执行 DNAT。
+6. 数据包会跳过 OUTPUT 链，重新路由决策后发送到 POSTROUTING 链，离开网络协议栈。
 
 ```bash
 ipvsadm -Ln
@@ -144,7 +144,7 @@ graph TD
 
 # Underlay 访问 Service
 
-由于underlay 使用的是 ipvlan l2，ipvlan驱动会把网络包从 ipvlan子设备（pod中的网卡）移到master设备（vlan.1155），无需经过内核网络协议栈的。到达vlan.1155后，会打上vlan tag并进入内核的网络协议栈，此时匹配到PREROUTING链如下规则，打上0x200：
+由于 Underlay 使用的是 IPvlan L2 模式，IPvlan 驱动会将网络包从子设备（Pod 中的网卡）移交到 Master 设备（`vlan.1155`）。当流量到达 `vlan.1155` 后，会进入宿主机内核网络协议栈（PREROUTING 链），此时匹配到如下规则，并打上 Mark `0x200`：
 
 ```bash
 -A PREROUTING -s 10.186.155.0/27 -d 8.6.0.0/16 -i vlan.1155 -m comment --comment "send from ipvlan pod to service cidr" -j MARK --set-xmark 0x200/0x200
@@ -156,19 +156,19 @@ graph TD
 -A POSTROUTING -m comment --comment "send from ipvlan pod to service cidr" -m mark --mark 0x200/0x200 -j MASQUERADE
 ```
 
-PREROUTING 链处理完成后会进行路由决策，由于所有的service cluster ip都被kube-proxy 配置在kube-ipvs0这个dummy 网络接口上，匹配到local 路由表，进入INPUT 链，发往kube-ipvs0。如上文所述，IPVS 模块会在INPUT 设置HOOK，拦截到流量后进行DNAT，把网络包的target ip 改成后端pod的ip，再次进入网络协议栈，执行路由决策。
+PREROUTING 链处理完成后会进行路由决策。由于所有的 Service Cluster IP 都被 kube-proxy 配置在 `kube-ipvs0` 这个 Dummy 接口上，匹配到 Local 路由表，进入 INPUT 链。如上文所述，IPVS 模块在 INPUT 链设置 Hook，拦截流量后进行 DNAT，把网络包的 Target IP 改成后端 Pod 的 IP，再次进入网络协议栈，执行路由决策。
 
-如果后端underlay pod，由于本机没有相关路由，通过biz接口发送给默认路由（`default via 10.186.153.254 dev biz`）。由于之前打上了mark，此时会执行POSTROUTING的`--mark 0x200/0x200 -j MASQUERADE`规则，把src ip 改成biz网口的ip。最后发出的包`src: biz_ip`-`target: underlay_ip`（`10.186.153.103`-`10.186.155.6`)，此时流量和node节点直接访问underlay pod相同。
+如果后端是 Underlay Pod，由于本机没有相关路由，通过 `biz` 接口发送给默认网关（`default via 10.186.153.254 dev biz`）。由于之前打上了 Mark，此时会执行 POSTROUTING 的 `--mark 0x200/0x200 -j MASQUERADE` 规则，把 Src IP 改成 `biz` 网口的 IP。最后发出的包 `src: biz_ip` -> `target: underlay_ip`（`10.186.153.103` -> `10.186.155.6`），此时流量和 Node 节点直接访问 Underlay Pod 相同。
 
 > 关键点：
 >
-> 1. 默认网关必须有到vlan 1155网关的路由信息，或者默认网关和vlan 1155网关是**同一台三层交换机**，否则无法访问。
-> 2. **Hairpin**：如果 IPVS DNAT 后 underlay pod 在同node上，也需要出node，经过网关再发送回来。
+> 1. 默认网关必须有到 `vlan 1155` 网关的路由信息，或者默认网关和 `vlan 1155` 网关是**同一台三层交换机**，否则无法访问。
+> 2. **Hairpin**：如果 IPVS DNAT 后 Underlay Pod 在同 Node 上，也需要出 Node，经过网关再发送回来。
 > 3. 物理网关需要配置为支持将流量“发回”同一个物理接口
 
-如果后端是overlay pod，根据路由规则（`10.20.0.0/25 via 10.20.0.0 dev vxlan.2 onlink`），会经过FORWARD->POSTROUTING后发送到`vxlan.2` 接口，经过封装重新进入网络协议栈（OUTPUT），同样在POSTROUTING链执行SNAT，由于访问overlay的流量会从ctl接口出（vxlan封装的node ip是ctl网段），src ip 会是ctl ip。最后发出的网络包`src: ctl_ip`-`target: other ctl_ip`。此时流量和node节点直接访问overlay pod 相同。
+如果后端是 Overlay Pod，根据路由规则（`10.20.0.0/25 via 10.20.0.0 dev vxlan.2 onlink`），会经过 FORWARD -> POSTROUTING 后发送到 `vxlan.2` 接口，经过封装重新进入网络协议栈（OUTPUT），同样在 POSTROUTING 链执行 SNAT。由于访问 Overlay 的流量会从 `ctl` 接口出（VXLAN 封装的 Node IP 是 `ctl` 网段），Src IP 会是 `ctl` IP。最后发出的网络包 `src: ctl_ip` -> `target: other ctl_ip`。此时流量和 Node 节点直接访问 Overlay Pod 相同。
 
-回程流量会进入宿主机网络协议栈的 PREROUTING，此时Conntrack介入，根据五元组识别这是之前的链接，执行De-SNAT 把target ip改回underlay pod的ip，再次进入路由决策，经过FORWARD（状态为 ESTABLISHED，放行）和POSTROUTING，在出协议栈前Conntrack会执行De-DNAT，把src IP改成 service ip （8.6.x.x）。物理网关收到后，把数据包发回node的biz接口，进入vlan.1155子接口时被ipvlan驱动拦截，被直接移进pod命名空间。
+回程流量会进入宿主机网络协议栈的 PREROUTING，此时 Conntrack 介入，根据五元组识别这是之前的连接，执行 De-SNAT 把 Target IP 改回 Underlay Pod 的 IP，再次进入路由决策，经过 FORWARD（状态为 ESTABLISHED，放行）和 POSTROUTING。在出协议栈前 Conntrack 会执行 De-DNAT，把 Src IP 改成 Service IP （`8.6.x.x`）。物理网关收到后，把数据包发回 Node 的 `biz` 接口，进入 `vlan.1155` 子接口时被 IPvlan 驱动拦截，被直接移进 Pod 命名空间。
 
 ```bash
 -A KUBE-FORWARD -m comment --comment "kubernetes forwarding conntrack rule" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
@@ -264,10 +264,97 @@ graph TD
 
 # Overlay 访问 Service
 
+Overlay Pod 访问 Service，数据从 Veth Pair 到达宿主机网络空间，进入 PREROUTING 链，匹配规则（`-A PREROUTING -s 10.20.0.0/16 -m comment --comment "upcs vxlan mark" -j MARK --set-xmark 0x100/0x100`）打上 Mark，用于后续 SNAT。之后就和 Underlay 一样经过 IPVS DNAT 处理后再次路由决策。
+
+如果后端是 Underlay Pod，会执行 SNAT，把 Target IP 设置为 `biz` 接口 IP（`10.186.153.103`），然后发送给默认网关。
+
+如果后端是 Overlay Pod，不会执行 SNAT，会发往 `vxlan.2` 进行封装。
+
+整体流程如下：
+
+```mermaid
+flowchart TD
+    %% 样式定义
+    classDef packet fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef k8s fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef net fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef decision fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+
+    %% 阶段一：发起请求
+    subgraph Origin["阶段一：Overlay Pod 发起"]
+        Start(("开始请求")) --> PodOut["Pod 发出数据包<br/>Src: 10.20.9.60<br/>Dst: ServiceVIP (8.6.x.x)"]
+        PodOut -->|veth pair| HostNet["进入宿主机网络空间"]
+    end
+
+    %% 阶段二：宿主机入站预处理
+    subgraph HostStack["阶段二：宿主机协议栈处理"]
+        HostNet --> Mangle["PREROUTING (Mangle 表)<br/>打标记 fwmark: 0x100"]
+        Mangle --> IPVS_Check{"访问 Service VIP？<br/>(匹配 kube-ipvs0)"}
+        
+        IPVS_Check -->|是| IPVS_LB["IPVS 负载均衡 (INPUT 链)"]
+        IPVS_LB --> DNAT_Action["执行 DNAT<br/>Dst 变更为后端 Pod IP"]
+        
+        DNAT_Action --> RouteLookup["路由重查 (Output Routing)"]
+    end
+
+    %% 阶段三：路由与 SNAT 分歧
+    subgraph DecisionCore["阶段三：分歧处理 (基于后端类型)"]
+        RouteLookup --> IsOverlayBackend{"后端是 Overlay 网段？<br/>(10.20.0.0/16)"}
+        
+        %% 分支 A：Underlay 后端
+        IsOverlayBackend -->|"否 (Underlay 后端)"| Path_Und["分支 A：Underlay Pod<br/>Dst: 10.186.155.6"]
+        Path_Und --> Route_Und["命中默认路由<br/>Default via 10.186.153.254"]
+        Route_Und --> Masq_Check["POSTROUTING 检查<br/>(Mark 0x100 & 非 Overlay 目的)"]
+        Masq_Check --> SNAT_Act["执行 SNAT (MASQUERADE)<br/>Src 变为 Node IP (10.186.153.114)"]
+        SNAT_Act --> Out_Biz["物理接口 biz 发出<br/>(发给默认网关 MAC)"]
+
+        %% 分支 B：Overlay 后端
+        IsOverlayBackend -->|"是 (Overlay 后端)"| Path_Ovr["分支 B：Overlay Pod<br/>Dst: 10.20.4.18"]
+        Path_Ovr --> Route_Ovr["命中 Overlay 路由<br/>via vxlan.2"]
+        Route_Ovr --> Skip_SNAT["POSTROUTING 检查<br/>(匹配 RETURN 规则)"]
+        Skip_SNAT --> No_SNAT["不执行 SNAT (Return)<br/>Src 保持 Pod IP (10.20.9.60)"]
+        No_SNAT --> Out_Vxlan["VXLAN 封装发出<br/>(UDP 封装发往对端 Node)"]
+    end
+
+    %% 链接到结束
+    Out_Biz --> End_Und((Target: Underlay))
+    Out_Vxlan --> End_Ovr((Target: Overlay))
+
+    %% 类应用
+    class Start,PodOut,End_Und,End_Ovr packet;
+    class IPVS_LB,DNAT_Action,SNAT_Act,No_SNAT k8s;
+    class HostNet,Mangle,Out_Biz,Out_Vxlan net;
+    class IPVS_Check,IsOverlayBackend,Masq_Check,Skip_SNAT decision;
+```
+
 # Q&A
 
-## underlay pod 访问underlay pod 和 访问service (underlay endpoint)区别？
+## Underlay Pod 访问 Underlay Pod 和 访问 Service (Underlay Endpoint) 的区别？
 
-underlay pod直接访问 underlay pod因为都在同一个二层网络，不会经过宿主机的三层网络协议栈，也不会经过netfilter，直接转发给物理网关。
+Underlay Pod 直接访问 Underlay Pod，因为都在同一个二层网络，不会经过宿主机的三层网络协议栈，也不会经过 Netfilter，直接转发给物理网关。
 
-如果underlay 访问 service，因为不是二层可达，会在vlan.1155进入三层网络协议栈，执行后面一系列nat，最后等同于宿主机直接访问后端pod。
+如果 Underlay 访问 Service，因为不是二层可达，会在 `vlan.1155` 进入三层网络协议栈，执行后面一系列 NAT，最后等同于宿主机直接访问后端 Pod。
+
+## Ping Cluster IP 不通的原因
+
+如果是传统 iptables 实现的 Service，由于没有 Cluster IP 的网络实体，Ping 是不通的。
+
+如果是 IPVS，因为有 `kube-ipvs0` 这个网络实体，理论上是可以 Ping 通的，但是由于配置了 Netfilter 规则导致 Ping 不通。
+
+在 INPUT 链中会执行 `KUBE-IPVS-FILTER`，其中白名单中的规则都是 IP+Port 类型，而 Ping 使用的 ICMP 协议没有 TCP/UDP 端口的概念，流量落入最后一条规则。因为 Service IP (`8.6.x.x`) 存在于 `KUBE-IPVS-IPS` (通常是 `hash:ip` 类型) 集合中，且 Ping 是新连接 (`NEW`)，所以防火墙直接执行 `REJECT`。
+
+```bash
+-A INPUT -m comment --comment "kubernetes ipvs access filter" -j KUBE-IPVS-FILTER
+
+# 白名单
+-A KUBE-IPVS-FILTER -m set --match-set KUBE-LOAD-BALANCER dst,dst -j RETURN
+-A KUBE-IPVS-FILTER -m set --match-set KUBE-CLUSTER-IP dst,dst -j RETURN
+-A KUBE-IPVS-FILTER -m set --match-set KUBE-EXTERNAL-IP dst,dst -j RETURN
+-A KUBE-IPVS-FILTER -m set --match-set KUBE-EXTERNAL-IP-LOCAL dst,dst -j RETURN
+-A KUBE-IPVS-FILTER -m set --match-set KUBE-HEALTH-CHECK-NODE-PORT dst -j RETURN
+
+# 黑名单
+-A KUBE-IPVS-FILTER -m conntrack --ctstate NEW -m set --match-set KUBE-IPVS-IPS dst -j REJECT --reject-with icmp-port-unreachable
+```
+
+`KUBE-IPVS-IPS`具体内容可通过`ipset list KUBE-IPVS-IPS`查看。
