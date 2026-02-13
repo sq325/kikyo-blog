@@ -1,7 +1,7 @@
 ---
 title: "About The Blog"
 date: 2021-09-07T17:43:52+08:00
-lastmod: 2024-03-17T7:43:52+08:00
+lastmod: 2026-02-13T7:43:52+08:00
 toc: false
 
 ---
@@ -13,9 +13,9 @@ toc: false
 
 博主技术方向：
 
-- DevOps
-- 云原生可观测
-- Prometheus相关生态
+- 云原生生态（k8s、容器、云原生监控等）
+- Opentelemetry 生态（Prometheus、Jaeger、OTEL Collector等）
+- 网络和操作系统相关技术
 
 这两个领域在近几年不断有新技术涌现，很幸运身在一个需要不断提升自我的时代。
 
@@ -27,21 +27,18 @@ toc: false
 
 - k8s和容器相关监控开发与实践
 - DevOps相关技术与实践
-- 可观测技术探索与落地
+- 可观测技术架构设计与实践
 - 运维工具开发
 
 基础知识：
 
 - 网络
 - 操作系统
-- 算法
 
 语言：
 
 - Python
 - Golang
-- Shell
-- JavaScript
 
 # About Me
 

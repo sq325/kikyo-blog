@@ -45,6 +45,8 @@ sequenceDiagrams:
 
 <!--more-->
 
+k8s 中 Pod 是动态的，而外界的网络调用需要一个稳定的网络标识（ip），service 就是用来解决这个问题。另外，k8s 大部分的服务都是多副本，需要一个负载均衡机制。
+
 # Service 实现方式
 
 早期 K8s Service 实现方式是通过 iptables 规则，kube-proxy 会在集群 Node 上为每个 Service 维护 iptables 规则。内核 Netfilter 拦截每个发往 Service 的数据包，进行 DNAT，把 Target IP 设置成后端 Pod IP。随着 Service 数量增多，iptables 的规则数量也会增加，最终会影响性能。有测试表明，当 Service 数量大于 1000 时，iptables 性能会低于 IPVS。
