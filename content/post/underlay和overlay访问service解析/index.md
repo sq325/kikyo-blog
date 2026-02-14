@@ -1,7 +1,7 @@
 ---
 title: "underlay和overlay访问service解析"
 date: 2026-02-11T10:24:32+08:00
-lastmod: 2026-02-12T10:24:32+08:00
+lastmod: 2026-02-13T10:24:32+08:00
 draft: false
 keywords: []
 description: ""
@@ -329,6 +329,49 @@ flowchart TD
     class IPVS_Check,IsOverlayBackend,Masq_Check,Skip_SNAT decision;
 ```
 
+# 访问 NodePort Service 原理
+
+NodePort Service 通过 Node 的物理网络暴露后端 Pod，使得集群外的流量可以访问集群内的 Pod。
+
+Client 端访问 NodePort Service 流程（基于默认的 `externalTrafficPolicy: Cluster` 策略）：
+
+原始数据头：**`clientIP` -> `nodeIP`:`port`**
+
+1. 流量到达 Node 后进入网络协议栈，在 PREROUTING 链中被打上 `0x4000` 标记。
+
+   ```bash
+    -A PREROUTING -m comment --comment "kubernetes service portals" -j KUBE-SERVICES # 所有流量进入 KUBE-SERVICES
+    -A KUBE-SERVICES -m addrtype --dst-type LOCAL -j KUBE-NODE-PORT # 访问的是本地IP，区分 ClusterIP 和 NodePort
+    -A KUBE-NODE-PORT -p tcp -m comment --comment "Kubernetes nodeport TCP port for masquerade purpose" -m set --match-set KUBE-NODE-PORT-TCP dst -j KUBE-MARK-MASQ # 匹配 NodePort 端口，打上 mark
+    -A KUBE-MARK-MASQ -j MARK --set-xmark 0x4000/0x4000
+   ```
+
+2. 出 PREROUTING 链，路由决策后进入 INPUT 链（因为 NodePort IP 是本机 IP），被 IPVS 模块 DNAT ，数据包变为：**`clientIP` -> `podIP`:`port`**
+
+3. 重新进入路由决策。
+
+   - 如果 Pod 在本节点：流量发往本机 Pod。
+
+   - 如果 Pod 在其他节点：流量经由物理网卡/隧道发出。
+   此时在 POSTROUTING 链执行 SNAT/Masquerade（因为带有 `0x4000` 标记）。数据包变为：`nodeIP` -> `podIP:port`
+
+   ```bash
+   -A POSTROUTING -m comment --comment "kubernetes postrouting rules" -j KUBE-POSTROUTING # 所有流量进入 KUBE-POSTROUTING
+   -A KUBE-POSTROUTING -m comment --comment "Kubernetes endpoints dst ip:port, source ip for solving hairpin purpose" -m set --match-set KUBE-LOOP-BACK dst,dst,src -j MASQUERADE # 见下文注解
+   -A KUBE-POSTROUTING -m mark ! --mark 0x4000/0x4000 -j RETURN # 没有 0x4000 的不做处理
+   -A KUBE-POSTROUTING -j MARK --set-xmark 0x4000/0x0
+   -A KUBE-POSTROUTING -m comment --comment "kubernetes service traffic requiring SNAT" -j MASQUERADE --random-fully # 有 0x4000 进行标记
+   ```
+
+   > KUBE-LOOP-BACK 中会列出当前 node 上所有 pod 的`podIP`:`podPORT`,`podIP`，这条规则的含义是：当 pod 访问自己的 service，IPVS 处理后 `targetIP` 是 `podIP`，匹配 `srcIP` == `targetIP` == `podIP`，数据包进入 POD 内部会因为不匹配数据流五元组被丢弃，导致 **Hairpin（发卡）**问题。这条规则会执行 MASQUERADE SNAT，把 src ip 改成 node ip，使得回包必须经过当前 node，触发 Conntrack 还原逻辑，保证连接畅通。
+
+   > **Why SNAT：**这里的 SNAT 是为了保证**路径对称**。如果 Client 访问的是 Node A，但 Pod 在 Node B。Node A 将包转发给 Node B 的 Pod。如果没有 SNAT，Pod (Node B) 会直接回包给 Client。Client 发出请求给 Node A，收到的回复却来自 Node B（或 Pod IP），Client 的 TCP 协议栈会丢弃该包。通过 SNAT 将源 IP 改为 Node A，Pod 就会回包给 Node A，Node A 再回包给 Client，闭环完成。
+
+4. 数据包回程：POD 回包给 NAT Node，出数据包为：**`podIP`:`port` -> `nodeIP`**
+5. 还原转发：node 收到流量后，经过 Conntrack 识别连接，执行 De-SNAT 和 De-DNAT，返回 Client。最终数据包为：**`nodeIP`:`port` -> `clientIP`**
+
+> 补充说明： 如果 Service 设置了 externalTrafficPolicy: Local，则上述第一步不会打 0x4000 标记，也就不会做 SNAT，从而保留 Client 的真实 IP。但这也意味着只有访问原本就有该 Service Pod 的 Node 才能通，否则流量会被丢弃。
+
 # Q&A
 
 ## Underlay Pod 访问 Underlay Pod 和 访问 Service (Underlay Endpoint) 的区别？
@@ -360,3 +403,20 @@ Underlay Pod 直接访问 Underlay Pod，因为都在同一个二层网络，不
 ```
 
 `KUBE-IPVS-IPS`具体内容可通过`ipset list KUBE-IPVS-IPS`查看。
+
+## SNAT/Masquerade 的作用
+
+在 K8s 网络中，SNAT (Source Network Address Translation) 主要用于解决**路由不对称（Asymmetric Routing）**导致的连接中断问题。
+
+当一个外部客户端访问集群入口（如 NodePort 或 LoadBalancer VIP）时，或者 Pod 访问集群外部网络时，回程流量必须能够原路返回。
+
+1. **NodePort / ExternalIP 场景**：
+   - 如果不做 SNAT，请求包路径：`Client` -> `Node A` -> `Pod (Node B)`。
+   - 回程包路径：`Pod (Node B)` -> `Client` (直连路由或经网关)。
+   - 结果：Client 期望收到来自 `Node A` 的回包，实际收到了 `Pod IP` 或 `Node B` 的回包，导致 TCP RST 丢包。
+   - **作用**：Node A 执行 SNAT 变成“中间人”，强制回程流量回到 Node A 进行状态还原。
+2. **Pod 访问外网场景**：
+   - Pod IP 通常是集群内部私有 IP，物理网关不知道如何路由回 Pod IP。
+   - **作用**：出 Node 时将源 IP SNAT 为 Node 的物理 IP，保证外网服务能正确回包给 Node，Node 再转交给 Pod。
+
+Node 在这些场景下充当了 **NAT 网关** 的角色，确保来回路径一致，维护连接状态（Conntrack）。
