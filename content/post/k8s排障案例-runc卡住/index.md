@@ -2,7 +2,7 @@
 title: "k8s排障案例-runc init 卡住导致容器创建失败"
 date: 2026-03-03T10:03:15+08:00
 lastmod: 2026-03-04T10:03:15+08:00
-draft: true
+draft: false
 keywords: []
 description: ""
 tags: ["k8s", "linux"]
