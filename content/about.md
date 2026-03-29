@@ -1,9 +1,8 @@
 ---
 title: "About The Blog"
 date: 2021-09-07T17:43:52+08:00
-lastmod: 2026-02-13T7:43:52+08:00
+lastmod: 2026-03-29T7:43:52+08:00
 toc: false
-
 ---
 *欢迎来到我的Blog！*
 
@@ -16,6 +15,7 @@ toc: false
 - 云原生生态（k8s、容器、云原生监控等）
 - Opentelemetry 生态（Prometheus、Jaeger、OTEL Collector等）
 - 网络和操作系统相关技术
+- AI 生态
 
 这两个领域在近几年不断有新技术涌现，很幸运身在一个需要不断提升自我的时代。
 
@@ -23,25 +23,31 @@ toc: false
 
 # 长期关注以下主题
 
-工作相关：
+云原生技术栈：
 
-- k8s和容器相关监控开发与实践
-- DevOps相关技术与实践
-- 可观测技术架构设计与实践
-- 运维工具开发
+- kubernetes 及其生态
+- Opentelemetry 及其生态
+- DevOps 在云原生环境的应用
 
 基础知识：
 
-- 网络
-- 操作系统
+- Linux 底层原理
+- TCP/IP 网络协议栈等
 
 语言：
 
-- Python
 - Golang
+- Python
+- Shell
 
-# About Me
+AI：
 
-> 一个被琐事缠身，天真的理想主义者。
->
-> 活着唯一的乐趣：以批判的眼光看待一切。
+- AI 生态标准（MCP、Skills）
+- 工程化：Context engineering、Harness engineering 
+
+# 个人项目
+
+守护进程 cmdDaemon：https://github.com/sq325/cmdDaemon
+
+一个混合exporter，融合了svcpod和emptydir两个exporter：https://github.com/sq325/k8sExporters
+
