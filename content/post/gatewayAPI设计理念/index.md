@@ -1,12 +1,12 @@
 ---
-title: "{{ replace .TranslationBaseName "-" " " | title }}"
-date: {{ .Date }}
-lastmod: {{ .Date }}
+title: "Gateway API设计理念"
+date: 2026-03-31T16:45:12+08:00
+lastmod: 2026-03-31T16:45:12+08:00
 draft: true
 keywords: []
 description: ""
-tags: []
-categories: []
+tags: ["k8s"]
+categories: ["技术"]
 author: ""
 
 # You can also close(false) or open(true) something for this content.

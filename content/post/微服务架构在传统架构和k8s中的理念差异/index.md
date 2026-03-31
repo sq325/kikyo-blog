@@ -1,7 +1,7 @@
 ---
-title: "{{ replace .TranslationBaseName "-" " " | title }}"
-date: {{ .Date }}
-lastmod: {{ .Date }}
+title: "传统微服务到 Kubernetes 原生网络架构的范式变迁"
+date: 2026-03-31T16:54:11+08:00
+lastmod: 2026-03-31T16:54:11+08:00
 draft: true
 keywords: []
 description: ""
