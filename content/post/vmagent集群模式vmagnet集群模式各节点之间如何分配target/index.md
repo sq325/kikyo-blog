@@ -1,5 +1,5 @@
 ---
-title: "vmagnet集群模式详解"
+title: "vmagent集群模式详解"
 date: 2024-03-17T13:47:44+08:00
 lastmod: 2024-03-17T13:47:44+08:00
 draft: false
