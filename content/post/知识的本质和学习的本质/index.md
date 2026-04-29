@@ -1,0 +1,47 @@
+---
+title: "知识的本质和学习的本质"
+date: 2026-04-29T17:03:49+08:00
+lastmod: 2026-04-29T17:03:49+08:00
+draft: true
+keywords: []
+description: ""
+tags: []
+categories: []
+author: ""
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+comment: true
+toc: true
+autoCollapseToc: false
+postMetaInFooter: true
+hiddenFromHomePage: false
+# You can also define another contentCopyright. e.g. contentCopyright: "This is another copyright."
+contentCopyright: false
+reward: false
+mathjax: false
+mathjaxEnableSingleDollar: false
+mathjaxEnableAutoNumber: false
+
+# You unlisted posts you might want not want the header or footer to show
+hideHeaderAndFooter: false
+
+# You can enable or disable out-of-date content warning for individual post.
+# Comment this out to use the global config.
+#enableOutdatedInfoWarning: false
+
+flowchartDiagrams:
+  enable: true
+  options: ""
+
+sequenceDiagrams: 
+  enable: true
+  options: ""
+
+---
+
+<!--more-->
+
+
+[] 神经可塑性
+[] 
