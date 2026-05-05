@@ -1,8 +1,8 @@
 ---
 title: "Prometheus TSDB 内存部分 Head Block 解析"
 date: 2026-04-29T15:34:50+08:00
-lastmod: 2026-04-29T15:34:50+08:00
-draft: true
+lastmod: 2026-05-05T15:34:50+08:00
+draft: false
 keywords: []
 description: ""
 tags: ["prometheus"]
@@ -69,7 +69,7 @@ type sample struct {
 
 Labels + samples 构成一个 Series，每次抓取指标时，都会在对应 Series 新增一个 sample。
 
-在 Prometheus 代码内部，一个逻辑上的 Sereis 对应一个 memSeries 对象，一个 memSeries 主要包含 Labels 和多个 chunk，chunk 存储着一个个 sample。
+在 Prometheus 代码内部，一个逻辑上的 Series 对应一个 memSeries 对象，一个 memSeries 主要包含 Labels 和多个 chunk，chunk 存储着一个个 sample。
 
 Prometheus 无论是 scrape 指标还是 query 指标，都伴随着大量并发读写 memSeries 操作，为了提升 memSeries 并发性能，stripeSeries 内部会把大量 memSeries 分组，不同组的 memSeries 访问由不同的锁控制。
 
@@ -88,7 +88,7 @@ flowchart TB
             P_L2["label: status=200 → [ID:1]"]
         end
 
-        subgraph STRIPESERIES["StripeSeries（分层存储：512个槽位以降低锁竞争）"]
+        subgraph STRIPESERIES["StripeSeries（分层存储：16384个槽位以降低锁竞争）"]
             direction TB
             
             subgraph STRIPE_0["Stripe 0（第 0 号分片）"]
@@ -127,7 +127,7 @@ flowchart TB
                 end
             end
             
-            subgraph STRIPE_N["Stripe 1 ~ 511（其他分片）"]
+            subgraph STRIPE_N["Stripe 1 ~ 16383（其他分片）"]
                 direction TB
                 MS_N1["MemSeries ..."]
                 MS_N2["MemSeries ..."]
@@ -145,10 +145,10 @@ flowchart TB
 
 ## memSeries
 
-一个 Sereis 在编码中对应一个 memSeries 对象：
+一个 Series 在编码中对应一个 memSeries 对象：
 
 ```go
-type memSeries stuct {
+type memSeries struct {
   ......
   ref uint64 // 其id
   lset labels.Labels // 存储了这个时间序列的标签集，是其唯一标识。
@@ -174,11 +174,11 @@ type memChunk struct {
 
 **chunk 是真正存储 samples 的地方，写入 sample 的过程如下：**
 
-每次 scrape 指标接口，Prometheus 都会一行行解析接口返回的所有指标，每解析一行调用一次 `storage.Appender.Append()`，其本质是 `head.Append()`，在 `head.Append()` 中会先把每个 samples 存到 `appendBatch` 中，等到这个接口所有指标都解析完成后再调用 `head.Commit()`，批量的把所有 samples 存储 head chunk。这个步骤中会把  `appendBatch` 存的所有 sample 都一个个调用 `memSeries.append()`，其底层实际上调用的是`xorAppender.Append()`，通过 xor 算法压缩后把 sample 存入到 xorchunk 中。
+每次 scrape 指标接口，Prometheus 都会一行行解析接口返回的所有指标，每解析一行调用一次 `storage.Appender.Append()`，其本质是 `head.Append()`，在 `head.Append()` 中会先把每个 samples 存到 `appendBatch` 中，等到这个接口所有指标都解析完成后再调用 `head.Commit()`，批量的把所有 samples 存储 head chunk。这个步骤会遍历 `appendBatch` 中存储的所有 sample，逐一调用 `memSeries.append()`，其底层实际上调用的是`xorAppender.Append()`，通过 xor 算法压缩后把 sample 存入到 xorchunk 中。
 
 **head chunk 内存占用计算：**
 
-因为 memSereis 占用内存的主要是 chunk 链表，计算一个 series 占用多少内存，就要弄清楚内存中有多少个 chunk，每个 chunk 多大。就如上面所说，只有 headChunk 是可写入的，其他 chunk 都等待被 mmap 到硬盘，一旦被 mmap，相应的 Go 堆内存就会释放。所以会长期占用内存的就是 chunk 链表中第一个 chunk，即 headChunk。要弄清楚 headChunk 占用内存多少，需要知道 headChunk 中最多存有多少个 samples，及新的 headChunk 被创建时，上一个 headChunk 中有多少 samples。
+memSeries 占用的内存主要来自 chunk 链表。要计算单个 series 占用多少内存，就要弄清楚内存中有多少个 chunk，每个 chunk 多大。就如上面所说，只有 headChunk 是可写入的，其他 chunk 都等待被 mmap 到硬盘，一旦被 mmap，相应的 Go 堆内存就会释放。所以会长期占用内存的就是 chunk 链表中第一个 chunk，即 headChunk。要弄清楚 headChunk 占用内存多少，需要知道 headChunk 中最多存有多少个 samples，及新的 headChunk 被创建时，上一个 headChunk 中有多少 samples。
 
 上面说到，Prometheus 每次抓取指标，最后都会调用`headAppender.Commit()` 把数据存储 headChunk，判断是否需要新建  headChunk 的逻辑就在 `headAppender.Commit()` 中的 `memSeries.appendPreprocessor()`。创建新的 headChunk 的硬性基础条件如下：
 
@@ -304,17 +304,17 @@ func (h *Head) mmapHeadChunks() {
 1. **1个sample**：每个 sample 存入 chunk 时都会经过 xor 算法压缩，平均下来每个 sample 只会占用 1.37 byte 的内存容量。
 2. **1个chunk：**一个 headChunk 中最多会有 120 * 2 个 samples（中途提高采集频率），正常是 120 个 samples，所以单个 chunk 占 164.4 - 328.8 byte < 1KB。
 
-极限情况，假设 chunk 都是因为满 1KB 被切割，如果有100万 Sereis，所有series的chunk占用的最大内存=100万*1KB/1024=976.6MB。接近1GB。
+极限情况，假设 chunk 都是因为满 1KB 被切割，如果有100万 Series，所有series的chunk占用的最大内存=100万*1KB/1024=976.6MB。接近1GB。
 
-如果是一般情况，每个 chunk 有 120 个 sample，一个 chunk 占用 120 * 1.37 = 164.4 byte。每个 memSeries 只有一个 chunk 在内存中，100万 Sereis 占用：100万 * 164.4 byte = 156.8 MB。
+如果是一般情况，每个 chunk 有 120 个 sample，一个 chunk 占用 120 * 1.37 = 164.4 byte。每个 memSeries 只有一个 chunk 在内存中，100万 Series 占用：100万 * 164.4 byte = 156.8 MB。
 
 以上计算都是在没有加载 mmapchunk 到内存中的情况。
 
-## stripeSereis
+## stripeSeries
 
 > stripeSeries 的核心思想是通过逻辑分片，把 memSeries 打散到 `16383` 个分片中，实现高并发的通过 id 或 hash（labels）正向查找 memSeries。
 
-因为 memSeries 每次采集都会有大量的 append 操作，同时查询也会有大量并发读，如果使用全局 Head 锁统一控制写入和查询会导致大量的竞态。为了提升并发性能，stripeSeries 把 memSeries 分成多个组，每个组有一个独立的锁控制，这样不同组的 memSeries 就互不干扰，可以安全并行读写。stripeSeries 的结构如下：
+因为 memSeries 每次采集都会有大量的 append 操作，同时查询也会有大量并发读，如果使用全局 Head 锁统一控制写入和查询会导致严重的锁竞争。为了提升并发性能，stripeSeries 把 memSeries 分成多个组，每个组有一个独立的锁控制，这样不同组的 memSeries 就互不干扰，可以安全并行读写。stripeSeries 的结构如下：
 
 ```go
 type stripeSeries struct {
@@ -404,7 +404,7 @@ func (h *Head) getOrCreateWithOptionalID(id chunks.HeadSeriesRef, hash uint64, l
 
 ```
 
-创建某个 series 的索引本质是更新 `MemPostings` 中的 `m` 和 `lvs` 两个结构，基本逻辑如下：拿到一个key=value，先判断 `MemPostings.m` 中是否存在，存在就只会只会 append 到对应的 `[]seriesID`，不存在就创建后 append。
+创建某个 series 的索引本质是更新 `MemPostings` 中的 `m` 和 `lvs` 两个结构，基本逻辑如下：拿到一个key=value，先判断 `MemPostings.m` 中是否存在，若存在，则直接将其 append 到对应的 `[]seriesID` 中；若不存在，则创建后进行 append。
 
 > 索引创建只涉及 append，查询 O(1)
 
@@ -511,7 +511,7 @@ func rangeForTimestamp(t, width int64) (maxt int64) {
 
 
 
-> 对于索引维护成本来说，删除 memSeries 造成的 index 维护成本远大于新建 memSeries，因为删除会导致 `[]seriesID` 替换重建。删除的时机时在 compact 后，因为 compact 后会触发 `DB.Compact()` ->  `Head.truncateMemory()` -> `Head.gc()`，`Head.gc()` 会先调用 `stripeSeries.gc()` 删除 chunks 和 memSeries，在根据删除了哪些 memSeries 调用`MemPostings.Delete()` 删除对应索引。
+> 对于索引维护成本来说，删除 memSeries 造成的 index 维护成本远大于新建 memSeries，因为删除会导致 `[]seriesID` 替换重建。删除的时机是在 compact 后，因为 compact 后会触发 `DB.Compact()` ->  `Head.truncateMemory()` -> `Head.gc()`，`Head.gc()` 会先调用 `stripeSeries.gc()` 删除 chunks 和 memSeries，在根据删除了哪些 memSeries 调用`MemPostings.Delete()` 删除对应索引。
 
 # 总结
 
