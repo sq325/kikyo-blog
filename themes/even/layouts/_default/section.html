@@ -1,7 +1,7 @@
 {{- define "title" }}{{ T "archive" }} - {{ .Site.Title }}{{ end -}}
 
 {{- define "content" }}
-{{- $paginator := .Paginate .Data.Pages.ByDate.Reverse .Site.Params.archivePaginate }}
+{{- $paginator := .Paginate .Data.Pages.ByLastmod.Reverse .Site.Params.archivePaginate }}
 <!-- {{- $paginator := .Paginate (where .Site.RegularPages "Type" "post") }} -->
 <section id="archive" class="archive">
   {{- if and (not $paginator.HasPrev) .Site.Params.showArchiveCount }}
@@ -13,9 +13,9 @@
   {{- end -}}
 
   {{- range $index, $element := $paginator.Pages -}}
-    {{- $thisYear := $element.Date.Format "2006" }}
+    {{- $thisYear := $element.Lastmod.Format "2006" }}
     {{- $lastElement := $index | add -1 | index $paginator.Pages }}
-    {{- if or (eq $index 0) ( ne ($lastElement.Date.Format "2006") $thisYear ) }}
+    {{- if or (eq $index 0) ( ne ($lastElement.Lastmod.Format "2006") $thisYear ) }}
       <div class="collection-title">
         <h2 class="archive-year">{{ $thisYear }}</h2>
       </div>
@@ -23,7 +23,7 @@
 
     <div class="archive-post">
       <span class="archive-post-time">
-        {{ $element.Date.Format "01-02" }}
+        {{ $element.Lastmod.Format "01-02" }}
       </span>
       <span class="archive-post-title">
         <a href="{{ $element.RelPermalink }}" class="archive-post-link">

@@ -1,7 +1,7 @@
 ---
 title: "高基数对Prometheus的影响"
-date: 2026-04-29T10:07:01+08:00
-lastmod: 2026-04-29T10:07:01+08:00
+date: 2026-05-17T10:07:01+08:00
+lastmod: 2026-05-17T10:07:01+08:00
 draft: true
 keywords: []
 description: ""
@@ -40,42 +40,22 @@ sequenceDiagrams:
 
 ---
 
-最近在实践中发现有一个prometheus agent实例经常被oom kill，容器设置的memory.limit 为 2GB。agent模式只转发指标，不会提供任何查询与持久化的功能，理论上对内存的需求并不高，但是指标基数过高还是会导致内存占用上升。本文将分析高基数指标对 Prometheus 的影响，其中涉及 TSDB 在内存中的形态，探究 agent 模式内存高的原因。
-
-
+众所周知 Prometheus 的性能杀手就是高基数，但是高基数对 Prometheus 具体有哪些影响可能并不清楚。为什么高基数是性能瓶颈？搞清楚这个问题，你就清楚了 Prometheus TSDB 大量底层设计原理。高基数贯穿了性能优化的整条主线，本文来一步步介绍。
 
 <!--more-->
 
-```mermaid
----
-config:
-  layout: tidy-tree
----
-%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "primaryColor": "#f8f9fa", "primaryBorderColor": "#333333", "lineColor": "#333333", "fontFamily": "sans-serif"}}}%%
-mindmap
-    root((高基数))
-        {{"内存"}}
-            ["倒排索引膨胀"]
-            ["head chunk保存所有活跃series"]
-        {{"查询性能"}}
-        {{"compaction oom风险"}}
-            "Compaction 处理 1万 × 120个样本 = 120万个数据点"
-            ("`  同时需要：
-        - 读取所有 series 的 chunks
-        - 重建索引（posting lists）
-        - 写入新 Block
-    内存峰值：原有内存的 2-3 倍`") 
-        {{"wal"}}
-            "100万 series：重启耗时 ~分钟级"
-            
+首先什么是高基数？Prometheus 中每个时间序列是一个 Series，每一个 Sereis 包含了唯一的 Key-Value 组合。高基数指的是 Series 数量多，也就是唯一的 Key-Value 组合数量多。容易混淆的是 samples 数量多，一个 Series 可以拥有大量 Samples，只要采集间隔够短，持续时间够长，samples 数量就会大量累计，samples 数量是远多于 Series 数量，为什么没有听说 samples 数量导致 Prometheus 性能瓶颈？这个问题我们先按下不表，介绍完基数的影响后，文章会后会给出解答。
+
+导致高基数的原因往往是某些key不断有一些新生成的value，比如user_id, trans_id等类似流水信息被写入了指标的labelvalue中，这通常是由于指标的label设计不合理导致。本文不会对指标设计做介绍，主要讨论的是为什么高基数对性能影响这么大？会造成有哪些危害？
+
+## 存储性能
+
+### Head Block
+
+### Compact
 
 
-```
-
-# 内存占用
-
-# 查询压力
-
-# 
 
 
+
+## 查询性能
