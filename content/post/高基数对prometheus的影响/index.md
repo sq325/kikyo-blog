@@ -48,6 +48,14 @@ sequenceDiagrams:
 
 导致高基数的原因往往是某些key不断有一些新生成的value，比如user_id, trans_id等类似流水信息被写入了指标的labelvalue中，这通常是由于指标的label设计不合理导致。本文不会对指标设计做介绍，主要讨论的是为什么高基数对性能影响这么大？会造成有哪些危害？
 
+高基数影响方方面面，首先是写入，memSeries 数量增加，headChunk数量也增加，内存占用增加。写入性能方面，labelset增加 导致stripeSeries 可能会有 hash冲突，并且写锁是互斥锁，影响读，导致严重的锁冲突。由于索引是个嵌套map[key]map[value][]seriesID，value增多导致map扩容，内存占用增加，[]seriesID维护成本也增加，GC压力增加。
+
+查询方面，
+索引成本：series增多导致同个label=value匹配的seriesID的列表增加，多个selector条件的[]seriesID做交集计算压力增加。
+IO读成本：由于需要查的series增多，大量sample分散在block中不同的的chunk，导致大量随机读。
+GC成本：查询需要创建大量SeriesIterator对象，查询完需要销毁，GC压力增加。
+Promql计算压力：有些语句需要计算大量sample值，有OOM风险。
+
 ## 存储性能
 
 ### Head Block
